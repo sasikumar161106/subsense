@@ -103,6 +103,7 @@ class EdgeSyncBatchRequest(BaseModel):
     events: List[Dict[str, Any]]
 
 
+@app.get("/health")
 @app.get("/v1/health")
 def get_health():
     return {
