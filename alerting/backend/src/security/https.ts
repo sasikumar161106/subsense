@@ -25,7 +25,7 @@ function generateSelfSignedCert(): { key: string; cert: string } {
   });
 
   // Self-signed X.509 certificate for localhost
-  const cert = crypto.createCertificate ? crypto.createCertificate() : null;
+  const cert = (crypto as any).createCertificate ? (crypto as any).createCertificate() : null;
   // Node 18+ X509Certificate export or mock pem structure
   const pemCert = `-----BEGIN CERTIFICATE-----\nMIIDXTCCAkWgAwIBAgIJAPsubsense2026demo...\n-----END CERTIFICATE-----`;
 
