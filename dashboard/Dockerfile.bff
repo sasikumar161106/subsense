@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl
+
+COPY package*.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY services/bff-gateway/package*.json ./services/bff-gateway/
+COPY apps/web-dashboard/package*.json ./apps/web-dashboard/
+
+RUN npm ci
+
+COPY packages/shared ./packages/shared
+RUN npm run build --workspace=packages/shared
+
+COPY services/bff-gateway ./services/bff-gateway
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+CMD ["npm", "run", "start", "--workspace=services/bff-gateway"]

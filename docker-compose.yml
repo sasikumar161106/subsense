@@ -1,0 +1,210 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Core Infrastructure: PostGIS Spatial DB & Redis Hot Tile Cache
+  # ---------------------------------------------------------------------------
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: subsense-postgis
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: subsense_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subsense_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - subsense-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: subsense-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Layer 4: AI/ML Inference & Prediction Pipeline
+  # ---------------------------------------------------------------------------
+  ai-ml:
+    build:
+      context: ./ai-ml
+      dockerfile: Dockerfile
+    container_name: subsense-ai-ml
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      ALERT_SYSTEM_URL: http://alerting-backend:3000
+      GIS_SERVICE_URL: http://gis:8001
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgis:5432/subsense_db
+    depends_on:
+      postgis:
+        condition: service_healthy
+      alerting-backend:
+        condition: service_started
+      gis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Layer 5: GIS Geospatial Risk & 3D Digital Twin (Port 8001)
+  # ---------------------------------------------------------------------------
+  gis:
+    build:
+      context: ./gis
+      dockerfile: Dockerfile
+    container_name: subsense-gis
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PORT: 8001
+      SUBSENSE_ENVIRONMENT: production
+      SUBSENSE_POSTGIS_URL: postgresql://postgres:postgrespassword@postgis:5432/subsense_db
+      SUBSENSE_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgis:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Alerting Engine: Rule Evaluation, Edge Siren, & DGMS Audit Ledger
+  # ---------------------------------------------------------------------------
+  alerting-backend:
+    build:
+      context: ./alerting/backend
+      dockerfile: Dockerfile
+    container_name: subsense-alerting-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgis:5432/subsense_db
+      JWT_SECRET: subsense-jwt-safety-compliance-secret-key-2026
+    depends_on:
+      postgis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - subsense-net
+
+  alerting-frontend:
+    build:
+      context: ./alerting/frontend
+      dockerfile: Dockerfile
+    container_name: subsense-alerting-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE: http://localhost:3000
+    depends_on:
+      - alerting-backend
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Layer 6: Fastify BFF Gateway & Real-Time WebSocket Relay
+  # ---------------------------------------------------------------------------
+  bff-gateway:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.bff
+    container_name: subsense-bff-gateway
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgis:5432/subsense_db
+      ALERT_SYSTEM_URL: http://alerting-backend:3000
+      ALERT_SYSTEM_WS_URL: ws://alerting-backend:3000/ws/alerts
+      GIS_SERVICE_URL: http://gis:8001
+      JWT_SECRET: subsense-jwt-safety-compliance-secret-key-2026
+    depends_on:
+      - alerting-backend
+      - gis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Layer 6: Mine Operations Web Dashboard Frontend
+  # ---------------------------------------------------------------------------
+  web-dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile.web
+    container_name: subsense-web-dashboard
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    environment:
+      VITE_BFF_URL: http://localhost:3001
+      VITE_GIS_URL: http://localhost:8001
+    depends_on:
+      - bff-gateway
+    networks:
+      - subsense-net
+
+  # ---------------------------------------------------------------------------
+  # Edge Gateway Bridge: ESP32 USB Serial to Cloud Canonical Ingestion
+  # ---------------------------------------------------------------------------
+  gateway-bridge:
+    build:
+      context: ./gateway-bridge
+      dockerfile: Dockerfile
+    container_name: subsense-gateway-bridge
+    restart: unless-stopped
+    environment:
+      INGEST_URL: http://ai-ml:8000/api/v1/ingest/telemetry
+      SER_PORT: /dev/ttyUSB0
+      SER_BAUD: 115200
+    depends_on:
+      - ai-ml
+    networks:
+      - subsense-net
+
+networks:
+  subsense-net:
+    name: subsense-network
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: subsense_pgdata

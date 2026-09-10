@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/web-dashboard/package*.json ./apps/web-dashboard/
+COPY services/bff-gateway/package*.json ./services/bff-gateway/
+
+RUN npm ci
+
+COPY packages/shared ./packages/shared
+RUN npm run build --workspace=packages/shared
+
+COPY apps/web-dashboard ./apps/web-dashboard
+RUN npm run build --workspace=apps/web-dashboard
+
+EXPOSE 5174
+
+CMD ["npm", "run", "preview", "--workspace=apps/web-dashboard", "--", "--port", "5174", "--host", "0.0.0.0"]
