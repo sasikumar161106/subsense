@@ -1,0 +1,50 @@
+# SubSense TinyML Evaluation & Benchmarking Configuration
+
+project:
+  name: "SubSense TinyML Subsidence Monitoring Platform"
+  version: "1.0.0"
+  random_seed: 42
+
+paths:
+  models_dir: "models"
+  firmware_dir: "firmware"
+  results_dir: "evaluation/results"
+  plots_dir: "evaluation/results/plots"
+
+data:
+  total_samples: 14000
+  sampling_rate_hz: 1.0
+  window_size: 32
+  step_size: 1
+  train_ratio: 0.60
+  val_ratio: 0.20
+  test_ratio: 0.20
+  buffer_gap_windows: 32
+
+acceptance_criteria:
+  node:
+    max_model_size_kb: 200.0
+    max_latency_ms: 500.0
+    min_recall: 0.95
+    min_sudden_onset_recall: 0.98
+    max_fpr: 0.10
+  gateway:
+    max_model_size_kb: 1024.0
+    max_latency_ms: 200.0
+    min_recall: 0.95
+    min_sudden_onset_recall: 0.98
+    max_fpr: 0.10
+
+benchmark:
+  warmup_runs: 100
+  measured_runs: 1000
+  batch_size: 1
+
+robustness:
+  missing_data_ratios: [0.05, 0.10, 0.20]
+  noise_levels_std: [0.01, 0.05, 0.10, 0.20]
+  sensor_failure_types:
+    - "stuck_constant"
+    - "zero_signal"
+    - "extreme_outlier"
+    - "missing_crack_sensor"

@@ -1,0 +1,86 @@
+{
+  "phase": 3,
+  "feature_max_drift": 0.0,
+  "edge_cloud_agreement": {
+    "gateway_vs_cloud_consensus": 96.30702389572772,
+    "gateway_vs_cloud_iforest": 96.19840695148443,
+    "node_vs_cloud_consensus": 95.72773352643013,
+    "node_vs_cloud_iforest": 92.50543084721217
+  },
+  "hardware_profile": [
+    {
+      "Metric / Tier": "Gateway Tier (ESP32 / ESP32-S3)",
+      "Active Compute Latency": "0.38 ms (@ 240MHz)",
+      "Peak Static RAM": "256 Bytes",
+      "Flash Footprint": "23.7 KB",
+      "Overall Recall": "97.73%",
+      "Sudden Recall": "100.00%",
+      "FPR": "6.93%",
+      "Cloud Agreement": "96.31%",
+      "Power Draw (1Hz Duty Cycle)": "0.26 mA (13.8 mos)"
+    },
+    {
+      "Metric / Tier": "Node Tier (ESP32 / ESP32-C3)",
+      "Active Compute Latency": "0.003 ms (@ 240MHz)",
+      "Peak Static RAM": "16 Bytes",
+      "Flash Footprint": "212 Bytes",
+      "Overall Recall": "96.95%",
+      "Sudden Recall": "100.00%",
+      "FPR": "4.39%",
+      "Cloud Agreement": "95.73%",
+      "Power Draw (5s Duty Cycle)": "0.06 mA (4.9 yrs)"
+    }
+  ],
+  "power_scenarios": [
+    {
+      "Tier": "Node Tier",
+      "Interval": "1.0 second (1 Hz)",
+      "Active Time": "5 ms",
+      "Active Current": "45 mA",
+      "Sleep Current": "10 \u00b5A",
+      "Avg Current": "0.235 mA",
+      "Battery Life": "11.7 months"
+    },
+    {
+      "Tier": "Node Tier",
+      "Interval": "2.0 seconds (0.5 Hz)",
+      "Active Time": "5 ms",
+      "Active Current": "45 mA",
+      "Sleep Current": "10 \u00b5A",
+      "Avg Current": "0.123 mA",
+      "Battery Life": "22.5 months"
+    },
+    {
+      "Tier": "Node Tier",
+      "Interval": "5.0 seconds (0.2 Hz)",
+      "Active Time": "5 ms",
+      "Active Current": "45 mA",
+      "Sleep Current": "10 \u00b5A",
+      "Avg Current": "0.055 mA",
+      "Battery Life": "50.2 months (~4.2 yrs)"
+    },
+    {
+      "Tier": "Gateway Tier",
+      "Interval": "1.0 second (1 Hz)",
+      "Active Time": "10 ms",
+      "Active Current": "65 mA",
+      "Sleep Current": "15 \u00b5A",
+      "Avg Current": "0.665 mA",
+      "Battery Life": "4.1 months (Solar buffered)"
+    }
+  ],
+  "sample_event_schema": {
+    "node_id": "N-021",
+    "model_version": "gw-autoencoder-v1.3.0",
+    "window_end_ts": "2026-09-09T05:11:58Z",
+    "anomaly_score": 0.79,
+    "local_confidence": 0.62,
+    "contributing_features": [
+      "tilt_rate",
+      "vibration_rms"
+    ],
+    "threshold_breached": "warning",
+    "siren_triggered": false,
+    "source_tier": "gateway"
+  }
+}

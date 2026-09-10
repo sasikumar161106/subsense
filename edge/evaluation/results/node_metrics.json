@@ -1,0 +1,309 @@
+{
+  "tier": "Node-Tier",
+  "device_target": "ESP32 / ESP32-C3",
+  "fp32_metrics": {
+    "accuracy": 0.9880521361332368,
+    "precision": 0.9720101781170484,
+    "recall": 1.0,
+    "specificity": 0.9795792079207921,
+    "f1_score": 0.985806451113004,
+    "false_positive_rate": 0.02042079207920792,
+    "false_negative_rate": 0.0,
+    "balanced_accuracy": 0.9897896039603961,
+    "matthews_corrcoef": 0.9757873540740556,
+    "roc_auc": 0.988723152419954,
+    "pr_auc": 0.9674812250514739,
+    "sudden_onset_recall": 1.0,
+    "sudden_onset_events_count": 420,
+    "confusion_matrix": {
+      "true_positive": 1146,
+      "true_negative": 1583,
+      "false_positive": 33,
+      "false_negative": 0,
+      "total_samples": 2762
+    }
+  },
+  "int8_metrics": {
+    "accuracy": 0.6926140477914554,
+    "precision": 0.5756495160468671,
+    "recall": 0.9860383944153578,
+    "specificity": 0.484529702970297,
+    "f1_score": 0.726921839354406,
+    "false_positive_rate": 0.5154702970297029,
+    "false_negative_rate": 0.013961605584642234,
+    "balanced_accuracy": 0.7352840486928274,
+    "matthews_corrcoef": 0.5113307702978003,
+    "roc_auc": 0.8750218690062723,
+    "pr_auc": 0.7508809221359055,
+    "sudden_onset_recall": 1.0,
+    "sudden_onset_events_count": 420,
+    "confusion_matrix": {
+      "true_positive": 1130,
+      "true_negative": 783,
+      "false_positive": 833,
+      "false_negative": 16,
+      "total_samples": 2762
+    }
+  },
+  "inspection_tflite": {
+    "model_path": "models\\node_model_int8.tflite",
+    "file_size_bytes": 1824,
+    "file_size_kb": 1.78125,
+    "file_size_mb": 0.001739501953125,
+    "precision_type": "Full INT8",
+    "quantization_type": "Full INT8",
+    "param_count": 169,
+    "total_tensors": 5,
+    "quantized_tensors_count": 5,
+    "total_tensor_bytes": 169,
+    "dtypes": [
+      "int8"
+    ],
+    "inputs": [
+      {
+        "name": "serving_default_keras_tensor_7:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "scale": 0.01566358283162117,
+        "zero_point": -1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "StatefulPartitionedCall_1:0",
+        "shape": [
+          1,
+          1
+        ],
+        "dtype": "int8",
+        "scale": 0.010278739035129547,
+        "zero_point": -12
+      }
+    ],
+    "tensor_details": [
+      {
+        "index": 0,
+        "name": "serving_default_keras_tensor_7:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "bytes": 8,
+        "is_quantized": true
+      },
+      {
+        "index": 1,
+        "name": "sequential_1_1/dense_7_1/MatMul",
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "int8",
+        "bytes": 16,
+        "is_quantized": true
+      },
+      {
+        "index": 2,
+        "name": "sequential_1_1/dense_6_1/MatMul",
+        "shape": [
+          16,
+          8
+        ],
+        "dtype": "int8",
+        "bytes": 128,
+        "is_quantized": true
+      },
+      {
+        "index": 3,
+        "name": "sequential_1_1/dense_6_1/MatMul;sequential_1_1/dense_6_1/Relu",
+        "shape": [
+          1,
+          16
+        ],
+        "dtype": "int8",
+        "bytes": 16,
+        "is_quantized": true
+      },
+      {
+        "index": 4,
+        "name": "StatefulPartitionedCall_1:0",
+        "shape": [
+          1,
+          1
+        ],
+        "dtype": "int8",
+        "bytes": 1,
+        "is_quantized": true
+      }
+    ]
+  },
+  "c_header_inspection": {
+    "header_path": "firmware\\subsense_node_model.h",
+    "file_size_bytes": 4634,
+    "file_size_kb": 4.525390625,
+    "static_flash_bytes": 212,
+    "static_ram_bytes": 32,
+    "dynamic_heap_allocation": false
+  },
+  "latency_profile_host_pc": {
+    "runs": 1000,
+    "mean_ms": 0.0031885000000000004,
+    "p50_ms": 0.0026,
+    "p90_ms": 0.0045,
+    "p95_ms": 0.004704999999999996,
+    "p99_ms": 0.0059,
+    "min_ms": 0.0024,
+    "max_ms": 0.0357,
+    "std_ms": 0.0016269781037248168,
+    "throughput_ips": 313627.0973812137
+  },
+  "end_to_end_pipeline_ms": {
+    "preprocessing_ms": 0.2641007999999999,
+    "inference_ms": 0.008894,
+    "postprocessing_ms": 0.0003184000000000001,
+    "total_e2e_ms": 0.2733132,
+    "end_to_end_ms": 0.2733132
+  },
+  "estimated_cycles_esp32_240mhz": {
+    "mac_operations": 169,
+    "estimated_cycles": 676,
+    "estimated_cycles_simd": 253,
+    "estimated_cycles_scalar": 676,
+    "estimated_latency_ms": 0.0028166666666666665,
+    "estimated_latency_240mhz_ms": 0.0028166666666666665,
+    "estimated_latency_160mhz_ms": 0.0042250000000000005,
+    "hardware_benchmark_note": "ESTIMATED ESP32 HARDWARE METRIC (Actual depends on flash bus latency & cache)"
+  },
+  "acceptance_gate": {
+    "size_pass": true,
+    "latency_pass": true,
+    "recall_pass": true,
+    "overall_pass": true
+  },
+  "robustness": {
+    "model_name": "Node-Tier",
+    "baseline": {
+      "accuracy": 0.6926140477914554,
+      "precision": 0.5756495160468671,
+      "recall": 0.9860383944153578,
+      "specificity": 0.484529702970297,
+      "f1_score": 0.726921839354406,
+      "false_positive_rate": 0.5154702970297029,
+      "false_negative_rate": 0.013961605584642234,
+      "balanced_accuracy": 0.7352840486928274,
+      "matthews_corrcoef": 0.5113307702978003,
+      "roc_auc": null,
+      "pr_auc": null,
+      "sudden_onset_recall": 1.0,
+      "sudden_onset_events_count": 0,
+      "confusion_matrix": {
+        "true_positive": 1130,
+        "true_negative": 783,
+        "false_positive": 833,
+        "false_negative": 16,
+        "total_samples": 2762
+      }
+    },
+    "missing_values": {
+      "0%": {
+        "dropout_rate": 0.0,
+        "recall": 0.9860383944153578,
+        "precision": 0.5756495160468671,
+        "f1_score": 0.726921839354406,
+        "fpr": 0.5154702970297029
+      },
+      "5%": {
+        "dropout_rate": 0.05,
+        "recall": 0.9834205933682374,
+        "precision": 0.5615346287992028,
+        "f1_score": 0.7148747220238052,
+        "fpr": 0.5445544554455446
+      },
+      "10%": {
+        "dropout_rate": 0.1,
+        "recall": 0.9790575916230366,
+        "precision": 0.5449247207382224,
+        "f1_score": 0.7001560057808242,
+        "fpr": 0.5798267326732673
+      },
+      "20%": {
+        "dropout_rate": 0.2,
+        "recall": 0.9685863874345549,
+        "precision": 0.5189340813464236,
+        "f1_score": 0.6757990863036785,
+        "fpr": 0.6367574257425742
+      }
+    },
+    "sensor_noise": {
+      "sigma_0.0": {
+        "noise_std": 0.0,
+        "recall": 0.9860383944153578,
+        "precision": 0.5756495160468671,
+        "f1_score": 0.726921839354406,
+        "fpr": 0.5154702970297029
+      },
+      "sigma_0.01": {
+        "noise_std": 0.01,
+        "recall": 0.9842931937172775,
+        "precision": 0.41901931649331353,
+        "f1_score": 0.5878061486170858,
+        "fpr": 0.9678217821782178
+      },
+      "sigma_0.05": {
+        "noise_std": 0.05,
+        "recall": 0.9834205933682374,
+        "precision": 0.41694413614502407,
+        "f1_score": 0.5856066506600206,
+        "fpr": 0.9752475247524752
+      },
+      "sigma_0.1": {
+        "noise_std": 0.1,
+        "recall": 0.9842931937172775,
+        "precision": 0.4245389537071886,
+        "f1_score": 0.5932158817771953,
+        "fpr": 0.9461633663366337
+      },
+      "sigma_0.2": {
+        "noise_std": 0.2,
+        "recall": 0.9834205933682374,
+        "precision": 0.4381804043545879,
+        "f1_score": 0.606239913505773,
+        "fpr": 0.8941831683168316
+      }
+    },
+    "sensor_failures": {
+      "stuck_tilt": {
+        "failure_type": "stuck_tilt",
+        "recall": 1.0,
+        "precision": 0.41491672700941346,
+        "f1_score": 0.5864892524002345,
+        "fpr": 1.0
+      },
+      "zero_displacement": {
+        "failure_type": "zero_displacement",
+        "recall": 0.9781849912739965,
+        "precision": 0.5216379711493718,
+        "f1_score": 0.6804248857375286,
+        "fpr": 0.6361386138613861
+      },
+      "extreme_vibration": {
+        "failure_type": "extreme_vibration",
+        "recall": 0.9860383944153578,
+        "precision": 0.5744789018810371,
+        "f1_score": 0.7259877926603797,
+        "fpr": 0.5179455445544554
+      },
+      "missing_crack": {
+        "failure_type": "missing_crack",
+        "recall": 0.5497382198952879,
+        "precision": 0.43209876543209874,
+        "f1_score": 0.4838709672491133,
+        "fpr": 0.5123762376237624
+      }
+    }
+  }
+}

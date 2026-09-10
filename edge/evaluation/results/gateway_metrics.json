@@ -1,0 +1,390 @@
+{
+  "tier": "Gateway-Tier",
+  "device_target": "Gateway MCU / ESP32-S3",
+  "fp32_metrics": {
+    "accuracy": 0.9659666908037654,
+    "precision": 0.937603993344426,
+    "recall": 0.9834205933682374,
+    "specificity": 0.9535891089108911,
+    "f1_score": 0.9599659279500289,
+    "false_positive_rate": 0.04641089108910891,
+    "false_negative_rate": 0.016579406631762654,
+    "balanced_accuracy": 0.9685048511395642,
+    "matthews_corrcoef": 0.931199087737643,
+    "roc_auc": 0.8981341687833705,
+    "pr_auc": 0.8303397002407431,
+    "sudden_onset_recall": 1.0,
+    "sudden_onset_events_count": 420,
+    "confusion_matrix": {
+      "true_positive": 1127,
+      "true_negative": 1541,
+      "false_positive": 75,
+      "false_negative": 19,
+      "total_samples": 2762
+    }
+  },
+  "int8_metrics": {
+    "accuracy": 0.9467776973207821,
+    "precision": 0.9070904645476773,
+    "recall": 0.9712041884816754,
+    "specificity": 0.9294554455445545,
+    "f1_score": 0.9380530968457154,
+    "false_positive_rate": 0.07054455445544554,
+    "false_negative_rate": 0.028795811518324606,
+    "balanced_accuracy": 0.9503298170131149,
+    "matthews_corrcoef": 0.8930940883070485,
+    "roc_auc": 0.8336357195929017,
+    "pr_auc": 0.7094319533183934,
+    "sudden_onset_recall": 1.0,
+    "sudden_onset_events_count": 420,
+    "confusion_matrix": {
+      "true_positive": 1113,
+      "true_negative": 1502,
+      "false_positive": 114,
+      "false_negative": 33,
+      "total_samples": 2762
+    }
+  },
+  "inspection_tflite": {
+    "model_path": "models\\gateway_model_int8.tflite",
+    "file_size_bytes": 30432,
+    "file_size_kb": 29.71875,
+    "file_size_mb": 0.029022216796875,
+    "precision_type": "Full INT8",
+    "quantization_type": "Full INT8",
+    "param_count": 22960,
+    "total_tensors": 13,
+    "quantized_tensors_count": 13,
+    "total_tensor_bytes": 22960,
+    "dtypes": [
+      "int8"
+    ],
+    "inputs": [
+      {
+        "name": "serving_default_keras_tensor:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "scale": 0.015628820285201073,
+        "zero_point": 0
+      }
+    ],
+    "outputs": [
+      {
+        "name": "StatefulPartitionedCall_1:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "scale": 0.001651946222409606,
+        "zero_point": 5
+      }
+    ],
+    "tensor_details": [
+      {
+        "index": 0,
+        "name": "serving_default_keras_tensor:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "bytes": 8,
+        "is_quantized": true
+      },
+      {
+        "index": 1,
+        "name": "sequential_1/dense_5_1/MatMul",
+        "shape": [
+          8,
+          128
+        ],
+        "dtype": "int8",
+        "bytes": 1024,
+        "is_quantized": true
+      },
+      {
+        "index": 2,
+        "name": "sequential_1/dense_4_1/MatMul",
+        "shape": [
+          128,
+          64
+        ],
+        "dtype": "int8",
+        "bytes": 8192,
+        "is_quantized": true
+      },
+      {
+        "index": 3,
+        "name": "sequential_1/dense_3_1/MatMul",
+        "shape": [
+          64,
+          32
+        ],
+        "dtype": "int8",
+        "bytes": 2048,
+        "is_quantized": true
+      },
+      {
+        "index": 4,
+        "name": "sequential_1/dense_2_1/MatMul",
+        "shape": [
+          32,
+          64
+        ],
+        "dtype": "int8",
+        "bytes": 2048,
+        "is_quantized": true
+      },
+      {
+        "index": 5,
+        "name": "sequential_1/dense_1_2/MatMul",
+        "shape": [
+          64,
+          128
+        ],
+        "dtype": "int8",
+        "bytes": 8192,
+        "is_quantized": true
+      },
+      {
+        "index": 6,
+        "name": "sequential_1/dense_1/MatMul",
+        "shape": [
+          128,
+          8
+        ],
+        "dtype": "int8",
+        "bytes": 1024,
+        "is_quantized": true
+      },
+      {
+        "index": 7,
+        "name": "sequential_1/dense_1/MatMul;sequential_1/dense_1/Relu",
+        "shape": [
+          1,
+          128
+        ],
+        "dtype": "int8",
+        "bytes": 128,
+        "is_quantized": true
+      },
+      {
+        "index": 8,
+        "name": "sequential_1/dense_1_2/MatMul;sequential_1/dense_1_2/Relu",
+        "shape": [
+          1,
+          64
+        ],
+        "dtype": "int8",
+        "bytes": 64,
+        "is_quantized": true
+      },
+      {
+        "index": 9,
+        "name": "sequential_1/dense_2_1/MatMul;sequential_1/dense_2_1/Relu",
+        "shape": [
+          1,
+          32
+        ],
+        "dtype": "int8",
+        "bytes": 32,
+        "is_quantized": true
+      },
+      {
+        "index": 10,
+        "name": "sequential_1/dense_3_1/MatMul;sequential_1/dense_3_1/Relu",
+        "shape": [
+          1,
+          64
+        ],
+        "dtype": "int8",
+        "bytes": 64,
+        "is_quantized": true
+      },
+      {
+        "index": 11,
+        "name": "sequential_1/dense_4_1/MatMul;sequential_1/dense_4_1/Relu",
+        "shape": [
+          1,
+          128
+        ],
+        "dtype": "int8",
+        "bytes": 128,
+        "is_quantized": true
+      },
+      {
+        "index": 12,
+        "name": "StatefulPartitionedCall_1:0",
+        "shape": [
+          1,
+          8
+        ],
+        "dtype": "int8",
+        "bytes": 8,
+        "is_quantized": true
+      }
+    ]
+  },
+  "c_header_inspection": {
+    "header_path": "firmware\\subsense_gateway_model.h",
+    "file_size_bytes": 159368,
+    "file_size_kb": 155.6328125,
+    "static_flash_bytes": 24224,
+    "static_ram_bytes": 256,
+    "dynamic_heap_allocation": false
+  },
+  "latency_profile_host_pc": {
+    "runs": 1000,
+    "mean_ms": 0.0030917,
+    "p50_ms": 0.0029,
+    "p90_ms": 0.003,
+    "p95_ms": 0.0033149999999999864,
+    "p99_ms": 0.005101,
+    "min_ms": 0.0028,
+    "max_ms": 0.0399,
+    "std_ms": 0.0013760454607315848,
+    "throughput_ips": 323446.6474754989
+  },
+  "estimated_cycles_esp32_240mhz": {
+    "mac_operations": 22960,
+    "estimated_cycles": 91840,
+    "estimated_cycles_simd": 34440,
+    "estimated_cycles_scalar": 91840,
+    "estimated_latency_ms": 0.38266666666666665,
+    "estimated_latency_240mhz_ms": 0.38266666666666665,
+    "estimated_latency_160mhz_ms": 0.574,
+    "hardware_benchmark_note": "ESTIMATED ESP32 HARDWARE METRIC (Actual depends on flash bus latency & cache)"
+  },
+  "acceptance_gate": {
+    "size_pass": true,
+    "latency_pass": true,
+    "recall_pass": true,
+    "overall_pass": true
+  },
+  "robustness": {
+    "model_name": "Gateway-Tier",
+    "baseline": {
+      "accuracy": 0.9467776973207821,
+      "precision": 0.9070904645476773,
+      "recall": 0.9712041884816754,
+      "specificity": 0.9294554455445545,
+      "f1_score": 0.9380530968457154,
+      "false_positive_rate": 0.07054455445544554,
+      "false_negative_rate": 0.028795811518324606,
+      "balanced_accuracy": 0.9503298170131149,
+      "matthews_corrcoef": 0.8930940883070485,
+      "roc_auc": null,
+      "pr_auc": null,
+      "sudden_onset_recall": 1.0,
+      "sudden_onset_events_count": 0,
+      "confusion_matrix": {
+        "true_positive": 1113,
+        "true_negative": 1502,
+        "false_positive": 114,
+        "false_negative": 33,
+        "total_samples": 2762
+      }
+    },
+    "missing_values": {
+      "0%": {
+        "dropout_rate": 0.0,
+        "recall": 0.9712041884816754,
+        "precision": 0.9070904645476773,
+        "f1_score": 0.9380530968457154,
+        "fpr": 0.07054455445544554
+      },
+      "5%": {
+        "dropout_rate": 0.05,
+        "recall": 0.9712041884816754,
+        "precision": 0.9063517915309446,
+        "f1_score": 0.9376579607474373,
+        "fpr": 0.07116336633663366
+      },
+      "10%": {
+        "dropout_rate": 0.1,
+        "recall": 0.9703315881326352,
+        "precision": 0.9040650406504065,
+        "f1_score": 0.936026935527561,
+        "fpr": 0.07301980198019802
+      },
+      "20%": {
+        "dropout_rate": 0.2,
+        "recall": 0.962478184991274,
+        "precision": 0.9026186579378068,
+        "f1_score": 0.9315878373383528,
+        "fpr": 0.07363861386138613
+      }
+    },
+    "sensor_noise": {
+      "sigma_0.0": {
+        "noise_std": 0.0,
+        "recall": 0.9712041884816754,
+        "precision": 0.9070904645476773,
+        "f1_score": 0.9380530968457154,
+        "fpr": 0.07054455445544554
+      },
+      "sigma_0.01": {
+        "noise_std": 0.01,
+        "recall": 0.9712041884816754,
+        "precision": 0.6578014184397163,
+        "f1_score": 0.7843551792225237,
+        "fpr": 0.3582920792079208
+      },
+      "sigma_0.05": {
+        "noise_std": 0.05,
+        "recall": 0.9860383944153578,
+        "precision": 0.5164533820840951,
+        "f1_score": 0.6778644266634171,
+        "fpr": 0.6547029702970297
+      },
+      "sigma_0.1": {
+        "noise_std": 0.1,
+        "recall": 0.9886561954624782,
+        "precision": 0.4707104279185708,
+        "f1_score": 0.6377708973957983,
+        "fpr": 0.7883663366336634
+      },
+      "sigma_0.2": {
+        "noise_std": 0.2,
+        "recall": 0.9912739965095986,
+        "precision": 0.45313123254886317,
+        "f1_score": 0.6219545574670228,
+        "fpr": 0.8483910891089109
+      }
+    },
+    "sensor_failures": {
+      "stuck_tilt": {
+        "failure_type": "stuck_tilt",
+        "recall": 0.9790575916230366,
+        "precision": 0.8904761904761904,
+        "f1_score": 0.9326683286781797,
+        "fpr": 0.0853960396039604
+      },
+      "zero_displacement": {
+        "failure_type": "zero_displacement",
+        "recall": 0.9511343804537522,
+        "precision": 0.9420916162489196,
+        "f1_score": 0.9465914020184656,
+        "fpr": 0.04146039603960396
+      },
+      "extreme_vibration": {
+        "failure_type": "extreme_vibration",
+        "recall": 0.974694589877836,
+        "precision": 0.8533231474407945,
+        "f1_score": 0.9099796329034261,
+        "fpr": 0.1188118811881188
+      },
+      "missing_crack": {
+        "failure_type": "missing_crack",
+        "recall": 0.9703315881326352,
+        "precision": 0.9070146818923328,
+        "f1_score": 0.9376053957906194,
+        "fpr": 0.07054455445544554
+      }
+    }
+  }
+}

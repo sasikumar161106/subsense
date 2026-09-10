@@ -1,0 +1,29 @@
+# SubSense Layer 4 Intelligence Layer - Pinned Dependencies
+# Environment: Python 3.13 / Windows x64 / Linux x64
+# Core ML & Numerics
+torch==2.13.0
+scikit-learn==1.9.0
+numpy==2.5.0
+pandas==3.0.3
+scipy==1.18.0
+
+# API Serving & Schemas
+fastapi==0.141.1
+uvicorn==0.52.4
+pydantic==2.13.4
+pyyaml==6.0.3
+
+# Explainability & Metrics
+shap==0.52.0
+captum==0.9.0
+
+# Testing & Quality
+pytest==9.1.1
+pytest-cov==7.1.0
+coverage==7.16.0
+requests==2.34.2
+
+# Phase 2: Graph Neural Networks & Spatial Geostatistics
+torch_geometric==2.8.0.post1
+pykrige==1.7.3
+tifffile==2026.9.9

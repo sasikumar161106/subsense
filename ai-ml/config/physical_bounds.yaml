@@ -1,0 +1,61 @@
+# SubSense Layer 4 - Physical Range & Implausibility Validation Bounds
+# Site: Jharia / Raniganj Underground Coal Panels
+# All thresholds are configurable per site without code modifications.
+
+sensors:
+  tilt_deg:
+    min: -45.0
+    max: 45.0
+    max_rate_deg_per_sec: 5.0
+    unit: "degrees"
+    description: "Dual-axis MEMS inclinometer resultant angle"
+
+  vibration_rms_mm_s:
+    min: 0.0
+    max: 200.0
+    max_rate_mm_s_per_sec: 150.0
+    unit: "mm/s"
+    description: "Triaxial high-frequency geophone velocity RMS"
+
+  displacement_mm:
+    min: 0.0
+    max: 1000.0
+    max_rate_mm_per_sec: 50.0
+    unit: "mm"
+    description: "Extensometer / crack potentiometer movement"
+
+  crack_index:
+    min: 0.0
+    max: 1.0
+    max_rate_per_sec: 0.5
+    unit: "dimensionless"
+    description: "Differential surface shear strain metric"
+
+gps:
+  lat:
+    min: -90.0
+    max: 90.0
+  lon:
+    min: -180.0
+    max: 180.0
+  elevation_m:
+    min: -500.0
+    max: 5000.0
+
+node_health:
+  battery_pct:
+    min: 0.0
+    max: 100.0
+    unit: "percent"
+  rssi_dbm:
+    min: -130.0
+    max: 0.0
+    unit: "dBm"
+  hop_count:
+    min: 0
+    max: 15
+    unit: "hops"
+
+timestamp:
+  max_future_skew_sec: 120.0
+  max_past_skew_sec: 86400.0

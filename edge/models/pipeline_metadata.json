@@ -1,0 +1,105 @@
+{
+  "pipeline_version": "1.0.0",
+  "created_at": "2026-09-09 11:08:12",
+  "features": [
+    "tilt_current",
+    "tilt_rate_of_change",
+    "tilt_variance",
+    "vibration_rms",
+    "vibration_peak_count",
+    "displacement_delta_baseline",
+    "crack_state",
+    "crack_recent_activation_count"
+  ],
+  "scaler_mean": [
+    0.010298492922105688,
+    1.1020648765289691e-05,
+    0.0008932536047947894,
+    0.043559448011223946,
+    0.33217993079584773,
+    -5.6224051014045916e-05,
+    0.0,
+    0.0
+  ],
+  "scaler_scale": [
+    0.07770287158419226,
+    0.0013409471403362622,
+    0.00021973310168107218,
+    0.0239002924013415,
+    2.029822137791292,
+    0.02014515337231989,
+    1.0,
+    1.0
+  ],
+  "thresholds": {
+    "teacher_ae": 0.34861107939195046,
+    "teacher_iforest": 0.5938142167041127,
+    "gateway_ae": 0.09718956455970572,
+    "gateway_rule_ensemble": 0.4834400737037021,
+    "node_student": 0.9176541880352391
+  },
+  "footprints_kb": {
+    "teacher_ae": 24.84375,
+    "gateway_ae": 89.65625,
+    "gateway_rule_ensemble": 1.2109375,
+    "gateway_total": 90.8671875,
+    "node_student": 0.62890625
+  },
+  "metrics": [
+    {
+      "Model": "Deep Teacher Autoencoder (Baseline 1)",
+      "Tier": "Cloud Baseline",
+      "Parameters": "6,360",
+      "Footprint (float32)": "24.8 KB",
+      "Overall Recall": "99.21%",
+      "Sudden-Onset Recall": "100.00%",
+      "False Positive Rate": "32.36%",
+      "F1-Score": "0.8104",
+      "Inference Latency": "2.7 \u00b5s"
+    },
+    {
+      "Model": "Teacher Isolation Forest (Baseline 2)",
+      "Tier": "Cloud Baseline",
+      "Parameters": "150 trees",
+      "Footprint (float32)": "~450.0 KB",
+      "Overall Recall": "98.34%",
+      "Sudden-Onset Recall": "100.00%",
+      "False Positive Rate": "10.64%",
+      "F1-Score": "0.9219",
+      "Inference Latency": "N/A (CPU forest)"
+    },
+    {
+      "Model": "Gateway Student Autoencoder",
+      "Tier": "Gateway (Edge)",
+      "Parameters": "22,952",
+      "Footprint (float32)": "89.7 KB",
+      "Overall Recall": "98.34%",
+      "Sudden-Onset Recall": "100.00%",
+      "False Positive Rate": "40.28%",
+      "F1-Score": "0.7709",
+      "Inference Latency": "4.6 \u00b5s"
+    },
+    {
+      "Model": "Gateway Dual-Check Ensemble (AE + Rule)",
+      "Tier": "Gateway (Edge)",
+      "Parameters": "22952 + 155 rules",
+      "Footprint (float32)": "90.9 KB",
+      "Overall Recall": "98.34%",
+      "Sudden-Onset Recall": "100.00%",
+      "False Positive Rate": "4.64%",
+      "F1-Score": "0.9600",
+      "Inference Latency": "13.1 \u00b5s"
+    },
+    {
+      "Model": "Node Student High-Recall Detector",
+      "Tier": "Node (MCU)",
+      "Parameters": "161",
+      "Footprint (float32)": "0.63 KB",
+      "Overall Recall": "100.00%",
+      "Sudden-Onset Recall": "100.00%",
+      "False Positive Rate": "2.04%",
+      "F1-Score": "0.9858",
+      "Inference Latency": "0.8 \u00b5s"
+    }
+  ]
+}

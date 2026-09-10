@@ -1,0 +1,152 @@
+{
+  "phase": 2,
+  "timestamp": "2026-09-09 11:16:37",
+  "benchmark": [
+    {
+      "Stage": "Cloud Teacher (Reference)",
+      "Model": "Deep Teacher Autoencoder",
+      "Tier": "Cloud Baseline",
+      "Footprint": "24.8 KB (float32)",
+      "Overall Recall": "99.21%",
+      "Sudden Recall": "100.00%",
+      "FPR": "32.36%",
+      "F1-Score": "0.8104"
+    },
+    {
+      "Stage": "Cloud Teacher (Reference)",
+      "Model": "Teacher Isolation Forest",
+      "Tier": "Cloud Baseline",
+      "Footprint": "~450.0 KB (float32)",
+      "Overall Recall": "98.34%",
+      "Sudden Recall": "100.00%",
+      "FPR": "10.64%",
+      "F1-Score": "0.9219"
+    },
+    {
+      "Stage": "Float32 Distilled Student",
+      "Model": "Gateway Dual-Check Ensemble",
+      "Tier": "Gateway Tier",
+      "Footprint": "90.9 KB (float32)",
+      "Overall Recall": "98.34%",
+      "Sudden Recall": "100.00%",
+      "FPR": "4.64%",
+      "F1-Score": "0.9600"
+    },
+    {
+      "Stage": "Float32 Distilled Student",
+      "Model": "Node Student Detector",
+      "Tier": "Node Tier (MCU)",
+      "Footprint": "0.63 KB (float32)",
+      "Overall Recall": "100.00%",
+      "Sudden Recall": "100.00%",
+      "FPR": "2.04%",
+      "F1-Score": "0.9858"
+    },
+    {
+      "Stage": "INT8 Quantized (PTQ)",
+      "Model": "Gateway Dual-Check Ensemble",
+      "Tier": "Gateway Tier",
+      "Footprint": "23.7 KB (INT8)",
+      "Overall Recall": "97.56%",
+      "Sudden Recall": "100.00%",
+      "FPR": "6.56%",
+      "F1-Score": "0.9435"
+    },
+    {
+      "Stage": "INT8 Quantized (PTQ)",
+      "Model": "Node Student Detector",
+      "Tier": "Node Tier (MCU)",
+      "Footprint": "212 B (INT8)",
+      "Overall Recall": "96.95%",
+      "Sudden Recall": "100.00%",
+      "FPR": "4.39%",
+      "F1-Score": "0.9545"
+    },
+    {
+      "Stage": "Pruned + INT8 Quantized",
+      "Model": "Gateway Dual-Check Ensemble",
+      "Tier": "Gateway Tier",
+      "Footprint": "23.7 KB (INT8)",
+      "Overall Recall": "97.73%",
+      "Sudden Recall": "100.00%",
+      "FPR": "6.93%",
+      "F1-Score": "0.9420"
+    },
+    {
+      "Stage": "Pruned + INT8 Quantized",
+      "Model": "Node Student Detector",
+      "Tier": "Node Tier (MCU)",
+      "Footprint": "212 B (INT8)",
+      "Overall Recall": "96.42%",
+      "Sudden Recall": "100.00%",
+      "FPR": "3.47%",
+      "F1-Score": "0.9580"
+    }
+  ],
+  "budget_verification": [
+    {
+      "Metric / Constraint": "RAM (Model + Runtime)",
+      "Gateway Tier Target": "<= 512 KB",
+      "Gateway Actual (Static)": "256 Bytes (0.25 KB)",
+      "Gateway Status": "PASS (0.05% of budget)",
+      "Node Tier Target": "<= 80 KB",
+      "Node Actual (Static)": "16 Bytes (0.016 KB)",
+      "Node Status": "PASS (0.02% of budget)"
+    },
+    {
+      "Metric / Constraint": "Flash (Model Weights)",
+      "Gateway Tier Target": "<= 1 MB",
+      "Gateway Actual (Static)": "23.7 KB",
+      "Gateway Status": "PASS (2.4% of budget)",
+      "Node Tier Target": "<= 200 KB",
+      "Node Actual (Static)": "212 Bytes (0.20 KB)",
+      "Node Status": "PASS (0.1% of budget)"
+    },
+    {
+      "Metric / Constraint": "Inference Latency",
+      "Gateway Tier Target": "<= 200 ms/window",
+      "Gateway Actual (Static)": "< 1.0 ms (est. 0.38 ms @ 240MHz)",
+      "Gateway Status": "PASS (>200x faster)",
+      "Node Tier Target": "<= 500 ms/window",
+      "Node Actual (Static)": "< 0.05 ms (est. 0.003 ms @ 240MHz)",
+      "Node Status": "PASS (>10000x faster)"
+    },
+    {
+      "Metric / Constraint": "FPU Dependency",
+      "Gateway Tier Target": "Zero (Fixed-Point/INT8)",
+      "Gateway Actual (Static)": "Pure INT8 / INT32 (Bit-shift)",
+      "Gateway Status": "PASS (ESP32-C3 ready)",
+      "Node Tier Target": "Zero (Fixed-Point/INT8)",
+      "Node Actual (Static)": "Pure INT8 / INT32 (Bit-shift)",
+      "Node Status": "PASS (ESP32-C3 ready)"
+    },
+    {
+      "Metric / Constraint": "Memory Allocation",
+      "Gateway Tier Target": "Zero Heap (Static Only)",
+      "Gateway Actual (Static)": "100% Static Arrays (No malloc)",
+      "Gateway Status": "PASS (Zero fragmentation)",
+      "Node Tier Target": "Zero Heap (Static Only)",
+      "Node Actual (Static)": "100% Static Arrays (No malloc)",
+      "Node Status": "PASS (Zero fragmentation)"
+    }
+  ],
+  "firmware_headers": {
+    "gateway": {
+      "output_path": "firmware\\subsense_gateway_model.h",
+      "flash_weights_bytes": 24224,
+      "ram_activation_bytes": 256,
+      "num_layers": 6,
+      "int_threshold": 474
+    },
+    "node": {
+      "output_path": "firmware\\subsense_node_model.h",
+      "flash_weights_bytes": 212,
+      "ram_activation_bytes": 16,
+      "int_threshold": 115
+    }
+  },
+  "tflite_models": {
+    "gateway_tflite": "models\\gateway_model_int8.tflite",
+    "node_tflite": "models\\node_model_int8.tflite"
+  }
+}

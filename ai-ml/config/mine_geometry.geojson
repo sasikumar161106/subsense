@@ -1,0 +1,55 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "site_id": "COAL-JH-PANEL7",
+    "crs": "EPSG:4326",
+    "version": "v1.4.0",
+    "updated_at": "2026-09-01T00:00:00Z"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "GOAF_PANEL_7A",
+      "properties": {
+        "feature_type": "goaf_void",
+        "name": "Panel 7 Caved Goaf Area",
+        "extraction_year": 2025,
+        "caving_status": "fully_caved"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.432000, 23.790500],
+            [86.434500, 23.790500],
+            [86.434500, 23.792500],
+            [86.432000, 23.792500],
+            [86.432000, 23.790500]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "PILLAR_ROW_7B",
+      "properties": {
+        "feature_type": "chain_pillars",
+        "pillar_width_m": 28.5,
+        "bord_width_m": 5.5,
+        "overburden_depth_m": 210.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.434600, 23.790500],
+            [86.436000, 23.790500],
+            [86.436000, 23.792500],
+            [86.434600, 23.792500],
+            [86.434600, 23.790500]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "subsense-alert-system",
+  "version": "3.0.0",
+  "description": "SubSense Life-Safety Alerting & Decision Support System for Coal Mine Subsidence Monitoring",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix frontend install",
+    "start": "npx -y concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"cyan.bold,magenta.bold\" \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev": "npm start",
+    "test": "npm --prefix backend test",
+    "test:unit": "npm --prefix backend run test:unit",
+    "test:integration": "npm --prefix backend run test:integration",
+    "test:chaos": "npm --prefix backend run test:chaos",
+    "test:outage": "npm --prefix backend run test:outage",
+    "test:load": "npm --prefix backend run test:load",
+    "test:replay": "npm --prefix backend run test:replay",
+    "simulate": "npm --prefix backend run simulate"
+  },
+  "keywords": [
+    "subsense",
+    "coal-mine-subsidence",
+    "dgms",
+    "life-safety",
+    "alerting",
+    "edge-computing",
+    "iot"
+  ],
+  "author": "SubSense Team",
+  "license": "ISC"
+}

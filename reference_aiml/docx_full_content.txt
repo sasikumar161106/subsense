@@ -1,0 +1,288 @@
+P1 [Normal]: SubSense
+
+P2 [Normal]: AI/ML Data Inference Layer
+
+P3 [Normal]: Technical Design Document
+
+P4 [Normal]: Version 1.0
+
+P5 [Normal]: Prepared for: Smart India Hackathon Submission
+
+P6 [Normal]: Classification: Confidential
+
+P8 [Heading 1]: Document Control
+
+P10 [Heading 1]: Table of Contents
+
+P12 [Heading 1]: 1. Introduction & Purpose
+
+P13 [Normal]: This document specifies the technical design of the AI/ML Data Inference Layer within SubSense, the AI-enabled wireless surface mesh platform for real-time subsidence monitoring in underground coal mines. It is the detailed engineering specification for “Step 4 — AI/ML Intelligence Layer” described in the SubSense Problem Statement & Proposed Solution.
+
+P14 [Normal]: The Data Inference Layer is the cloud-side (and edge-capable) analytical core of SubSense: it ingests live and historical multi-sensor time-series data from the mesh network, runs anomaly detection, cross-node spatial correlation, deformation-progression forecasting, and spatial interpolation, and produces structured, explainable Risk Events with severity, confidence, and a predictive time-to-critical estimate. These Risk Events are the sole handoff artifact into the GIS/Digital Twin Layer (Step 5) and the Alerting System (Step 6).
+
+P15 [Normal]: This document covers the inference pipeline architecture, each constituent model (anomaly detection, GNN spatial correlation, LSTM progression forecasting, Kriging interpolation), the feature engineering and data contracts between them, the model training and retraining lifecycle including the automatic false-alarm feedback loop, output schema, performance and reliability requirements, and integration with upstream (sensing/edge) and downstream (GIS, Alerting) subsystems.
+
+P16 [Heading 2]: 1.1 Objectives
+
+P17 [List Paragraph]: Continuously analyse live and historical multi-sensor time-series data to detect anomalies in individual and cross-node readings, per the baseline system design.
+
+P18 [List Paragraph]: Correlate signals spatially using a graph-based, GNN-inspired model over the mesh topology to distinguish genuine, spatially coherent subsidence patterns from isolated sensor noise.
+
+P19 [List Paragraph]: Estimate severity and progression rate, and generate a predictive time-to-critical countdown for each risk zone rather than a binary alert.
+
+P20 [List Paragraph]: Attach a confidence score and short natural-language explanation to every inference output, so downstream alerts are auditable and not a black box.
+
+P21 [List Paragraph]: Continuously improve precision using operator feedback on false alarms, without requiring manual data-science intervention for every threshold adjustment.
+
+P22 [List Paragraph]: Remain consistent with the edge-tier TinyML models (Section 9) so cloud-confirmed and edge-triggered detections rarely diverge in kind.
+
+P23 [List Paragraph]: Scale across a multi-tenant, multi-site deployment without cross-site data leakage or performance degradation.
+
+P24 [Heading 2]: 1.2 Scope
+
+P25 [Normal]: In scope: the cloud-side inference pipeline consisting of unsupervised anomaly detection, GNN-based spatial correlation, LSTM-based progression forecasting, Kriging spatial interpolation, confidence scoring and explanation generation, the time-to-critical estimator, the model training/retraining lifecycle, and the Risk Event data contract published to downstream subsystems.
+
+P26 [Normal]: Out of scope (covered in sibling documents): the embedded TinyML models and on-device runtime (SubSense TinyML On-Device Inference Technical Document), alert classification, notification dispatch and escalation (SubSense Alerting System Technical Document), GIS rendering and the 3D digital twin (Step 5), and the mesh communication protocol itself.
+
+P27 [Heading 1]: 2. System Context
+
+P28 [Normal]: The Data Inference Layer sits between the platform's data storage layer (time-series database fed by the gateway/mesh) and the two consumer subsystems: GIS/Digital Twin visualization and the Alerting System.
+
+P29 [Normal]: Gateway -> Cloud Ingestion -> Time-Series DB (InfluxDB/TimescaleDB)
+                                    |
+                                    v
+                    [ AI/ML DATA INFERENCE LAYER ]
+                                    |
+        +---------------------------+---------------------------+
+        |               |                |                     |
+        v               v                v                     v
+  Anomaly          GNN Spatial      LSTM Progression      Kriging Spatial
+  Detection        Correlation      Forecasting           Interpolation
+  (Isolation       (mesh topology   (time-to-critical     (continuous risk
+   Forest /         graph)           trend)                surface across
+   Autoencoder)                                            the panel)
+        |               |                |                     |
+        +---------------------------+---------------------------+
+                                    v
+                    Confidence Scoring & Explanation Generator
+                                    v
+                              Risk Event (structured)
+                     /                                   \
+                    v                                     v
+        GIS / Digital Twin Layer (Step 5)         Alerting System (Step 6)
+        (heatmaps, risk-zone boundaries,          (severity classification,
+         3D twin, InSAR cross-validation)           dispatch, escalation)
+                                    ^
+                    Operator feedback (false-alarm / confirmed)
+                    via Alerting System --> retraining loop (Section 8)
+
+P30 [Normal]: The layer also periodically cross-validates its own fine-grained, ground-sensor-driven risk surface against coarse-resolution Sentinel-1 InSAR satellite data as a macro-scale sanity check, consistent with the baseline design goal of combining real-time ground sensing with wide-area satellite coverage.
+
+P31 [Heading 1]: 3. Data Ingestion & Feature Engineering
+
+P32 [Heading 2]: 3.1 Input Data Sources
+
+P33 [Heading 2]: 3.2 Windowing & Feature Extraction
+
+P34 [Normal]: Raw per-sensor readings are aggregated into fixed-length sliding windows per node (default window and stride are configurable per site to balance detection latency against noise sensitivity). Engineered features per window include:
+
+P35 [List Paragraph]: Tilt/inclination: mean, rate of change, short- and long-window variance.
+
+P36 [List Paragraph]: Vibration: RMS amplitude, peak frequency/count above baseline.
+
+P37 [List Paragraph]: Displacement/stretch: delta from rolling baseline, cumulative drift.
+
+P38 [List Paragraph]: Crack sensor: activation state, activation frequency within the window.
+
+P39 [List Paragraph]: Cross-node features: pairwise/neighbourhood similarity of the above, used as edge features in the GNN (Section 5).
+
+P40 [Normal]: The same feature specification is shared with the TinyML edge models (see SubSense TinyML On-Device Inference Technical Document, Section 3.3) to minimize train-serve skew between edge and cloud detection.
+
+P41 [Heading 2]: 3.3 Data Quality & Sensor-Fault Filtering
+
+P42 [Normal]: Before features reach the anomaly models, a data-quality stage filters out readings from nodes exhibiting known fault signatures (e.g. flat-lined values, out-of-range spikes correlated with low battery) using the node health metadata, so degraded hardware is not misclassified as ground movement. Flagged nodes are excluded from that inference cycle and routed to the mesh self-health/predictive-maintenance pathway instead.
+
+P43 [Heading 1]: 4. Unsupervised Anomaly Detection
+
+P44 [Normal]: The first-stage model set flags abnormal sensor behaviour without requiring labelled subsidence events, since real incident labels are scarce. Two complementary model families run in parallel, consistent with the baseline design (“Isolation Forest / Autoencoder models flag abnormal sensor behaviour without labelled data”).
+
+P45 [Normal]: The two models' outputs are combined (e.g. score averaging or a simple ensembling rule) into a single per-node, per-window anomaly_score in the range 0–1, which becomes an input feature to the downstream GNN spatial correlation stage rather than being used directly to trigger alerts.
+
+P46 [Heading 1]: 5. Graph-Based Spatial Correlation (GNN-Inspired)
+
+P47 [Normal]: A single elevated sensor reading is not, by itself, strong evidence of subsidence — it could be noise, a loose mount, or a transient event. The spatial correlation stage addresses this using the baseline design's “cross-sensor, cross-node correlation” requirement and the uniqueness feature of a graph-based, GNN-inspired model over the mesh topology.
+
+P48 [Heading 2]: 5.1 Graph Construction
+
+P49 [List Paragraph]: Nodes of the graph = physical sensor nodes deployed above the mine panel.
+
+P50 [List Paragraph]: Edges = physical proximity and/or known geological continuity between node locations, weighted by distance and, where available, panel geometry.
+
+P51 [List Paragraph]: Node features = the per-window anomaly_score and raw engineered features from Section 4/3.2 for that sensor node.
+
+P52 [Heading 2]: 5.2 Correlation Mechanism
+
+P53 [Normal]: The model propagates and aggregates anomaly information across graph neighbourhoods, so a cluster of moderately anomalous, spatially adjacent nodes produces a stronger, more confident correlated signal than the same anomaly scores scattered randomly across the mesh. This directly reduces false positives from isolated sensor glitches while increasing sensitivity to genuine, spatially coherent ground movement.
+
+P54 [Normal]: Output: a correlation_score (0–1) per candidate risk zone, plus the specific set of contributing_nodes that formed the correlated cluster — both of which flow directly into the explainability payload of the resulting Risk Event.
+
+P55 [Heading 1]: 6. Progression Forecasting & Spatial Interpolation
+
+P56 [Heading 2]: 6.1 LSTM-Based Progression Forecasting
+
+P57 [Normal]: For zones with a confirmed correlated anomaly, an LSTM (Long Short-Term Memory) time-series model forecasts how the detected deformation is likely to evolve, using the recent history of the contributing nodes' readings. Outputs include a forecast_trend classification (stable, slow_progression, accelerating, sudden_onset) and the basis for the time_to_critical_hours estimate (Section 6.3).
+
+P58 [Heading 2]: 6.2 Kriging Spatial Interpolation
+
+P59 [Normal]: Because sensor nodes are discrete points, Kriging (a geostatistical interpolation technique) is used to generate a continuous estimated deformation/risk surface across the full panel area from the discrete node readings, filling in the space between nodes with a statistically principled estimate and an associated uncertainty measure. This continuous surface is what feeds the GIS deformation heatmap in the Step 5 visualization layer.
+
+P60 [Heading 2]: 6.3 Time-to-Critical Estimation
+
+P61 [Normal]: Combining the LSTM forecast trend with historically/synthetically calibrated critical-deformation thresholds for the panel type, the layer produces a time_to_critical_hours estimate: a predicted number of hours before the zone is expected to reach a defined critical deformation level, if the current trend continues unmitigated. This is reported as null/undefined when the trend is stable or the forecast is not yet reliable enough to commit to a number, rather than forcing a spurious estimate.
+
+P62 [Heading 1]: 7. Confidence Scoring & Explainability
+
+P63 [Normal]: Every Risk Event is required to carry a machine-generated confidence_score and a short natural-language explanation, addressing the baseline design's explicit requirement that “every alert is accompanied by a confidence score and a short explanation of which sensors and nodes triggered it.”
+
+P64 [List Paragraph]: The confidence_score is derived from a combination of the anomaly ensemble agreement (Section 4), the strength of the GNN correlation (Section 5), and the number of independent contributing nodes — more corroborating evidence yields higher confidence.
+
+P65 [List Paragraph]: The explanation_text is templated from the same structured signals (e.g. “3 adjacent nodes show correlated tilt increase with rising crack-sensor activity; GNN correlation score 0.81; trend accelerating”) so it is traceable back to specific model outputs rather than being a free-form, unverifiable generation.
+
+P66 [List Paragraph]: Periodic cross-validation against Sentinel-1 InSAR data (Section 2) provides an independent macro-scale check; large, sustained disagreement between ground-sensor inference and InSAR trends for the same area is surfaced as a data-quality flag rather than silently trusted.
+
+P67 [Heading 1]: 8. Model Training, Retraining & the Feedback Loop
+
+P68 [Heading 2]: 8.1 Initial Training
+
+P69 [Normal]: Anomaly detection, GNN correlation, and LSTM forecasting models are initially trained on available historical incident data supplemented by synthetic multi-sensor time-series generated to represent known subsidence-precursor signatures, since real labelled incidents are limited. Kriging is a per-inference geostatistical computation rather than a trained model, but its variogram parameters are calibrated from historical spatial data per site.
+
+P70 [Heading 2]: 8.2 Automatic False-Alarm Learning Loop
+
+P71 [Normal]: This closes the loop described in the SubSense Alerting System Technical Document (Section 9): operator feedback on a dispatched alert (false positive / confirmed positive) is published back to the Data Inference Layer.
+
+P72 [List Paragraph]: Feedback events are consumed from the shared internal message queue (alert-feedback topic) as labelled training examples.
+
+P73 [List Paragraph]: Short-term mitigation: per-site rule/threshold adjustments (owned by the Alerting System's Rule Engine) can be nudged immediately without waiting for a full retrain, for fast-moving false-alarm patterns.
+
+P74 [List Paragraph]: Long-term mitigation: accumulated feedback is incorporated into periodic scheduled retraining of the anomaly detection, GNN, and LSTM models, improving precision/recall over time without requiring a data scientist to manually relabel data for every adjustment.
+
+P75 [List Paragraph]: Every model version produced by retraining is versioned and logged, and every Risk Event records which model version produced it, preserving the same traceability discipline used in the Alerting System and TinyML documents.
+
+P76 [Heading 2]: 8.3 Retraining Cadence & Validation
+
+P77 [Normal]: Retraining runs on a scheduled cadence (e.g. weekly/monthly, configurable) plus an on-demand trigger if feedback volume crosses a threshold indicating a meaningful drift. Candidate retrained models are evaluated against a held-out validation set and, where feasible, shadow-deployed (scored alongside the production model without affecting live alerts) before promotion.
+
+P78 [Heading 1]: 9. Integration with the TinyML Edge Layer
+
+P79 [Normal]: The cloud Data Inference Layer is the training source of truth for the compressed edge models described in the SubSense TinyML On-Device Inference Technical Document. Whenever the anomaly detection or correlation models are retrained via the feedback loop (Section 8), the updated teacher models are re-distilled and re-quantized for gateway/node deployment, keeping edge and cloud detection philosophy aligned. Conversely, locally generated edge detection events are reconciled against the cloud layer's assessment of the same time window once connectivity resumes, and persistent disagreement is surfaced as a model-drift signal (see TinyML document, Section 10).
+
+P80 [Heading 1]: 10. Risk Event Output Schema
+
+P81 [Normal]: The Data Inference Layer's sole output artifact is the Risk Event, published to both the GIS/Digital Twin Layer and the Alerting System. This schema matches the input contract defined in the SubSense Alerting System Technical Document, Section 4.1.
+
+P82 [Normal]: {
+  "site_id": "SITE-JHARIA-04",
+  "zone_id": "PANEL-7-NE",
+  "node_ids": ["N-014", "N-015", "N-021"],
+  "anomaly_score": 0.81,
+  "correlation_score": 0.76,
+  "forecast_trend": "accelerating",
+  "time_to_critical_hours": 36.5,
+  "confidence_score": 0.87,
+  "contributing_sensors": ["tilt", "vibration", "crack"],
+  "explanation_text": "Correlated tilt and crack-sensor rise across 3 nodes.",
+  "model_versions": {
+    "anomaly": "cloud-ensemble-v2.1.0",
+    "correlation": "gnn-corr-v1.4.0",
+    "forecast": "lstm-forecast-v1.2.0"
+  },
+  "event_timestamp": "2026-09-09T05:10:02Z"
+}
+
+P83 [Heading 1]: 11. Non-Functional Requirements
+
+P84 [Heading 1]: 12. Deployment Architecture
+
+P85 [Normal]: Recommended baseline stack: a scheduled/streaming inference service (e.g. a stream-processing framework or scheduled batch-plus-micro-batch jobs) consuming from the time-series database, with the anomaly detection, GNN correlation, and LSTM forecasting models served behind a model-serving layer; a separate scheduled job for Kriging interpolation and InSAR cross-validation; a message queue shared with the Alerting System for both Risk Event publication and feedback-loop consumption; and a model registry (shared with the TinyML pipeline) for versioning and rollback.
+
+P86 [Normal]: Time-Series DB --> Feature Pipeline --> Model-Serving Layer
+                                          |-- Anomaly Ensemble
+                                          |-- GNN Correlation
+                                          |-- LSTM Forecasting
+                                          |-- Kriging Interpolation (scheduled)
+                                          |-- InSAR Cross-Validation (scheduled)
+                                          v
+                              Confidence/Explanation Generator
+                                          v
+                                Risk Event Publisher (queue)
+                                   /                    \
+                                  v                      v
+                     GIS/Digital Twin Layer      Alerting System
+                                                        |
+                                              Operator Feedback
+                                                        v
+                                        Feedback Consumer --> Model Registry
+                                                              --> Retraining Jobs
+                                                              --> TinyML Re-distillation
+
+P87 [Heading 1]: 13. Traceability to Problem Statement
+
+P88 [Heading 1]: 14. Glossary
+
+
+=== TABLE 0 ===
+['Field', 'Detail']
+['Document Title', 'SubSense AI/ML Data Inference Layer — Technical Design Document']
+['Module', 'Step 4: AI/ML Intelligence Layer (cloud-side data inference pipeline)']
+['Version', '1.0']
+['Status', 'Draft for hackathon submission / prototype build']
+['Related Documents', 'SubSense Problem Statement & Proposed Solution (Section 2, Step 4; Sections 4 & 5); SubSense Alerting System Technical Document v1.0; SubSense TinyML On-Device Inference Technical Document v1.0']
+
+=== TABLE 1 ===
+['Source', 'Format', 'Notes']
+['Live sensor stream (per node)', 'Time-series records: tilt, vibration, displacement, crack-state, timestamp', 'Delivered via gateway uplink; buffered locally at the edge during connectivity loss and back-filled on reconnect.']
+['Node/mesh health metadata', 'Battery level, signal strength, last-seen timestamp', 'Used to distinguish sensor failure from genuine anomalies (Section 3.3), and to feed predictive maintenance.']
+['Historical labelled/unlabelled dataset', 'Bulk time-series + incident labels where available', 'Used for model training/retraining (Section 8), not live inference.']
+['Mine-panel geometry & mesh topology', 'Static/slowly-changing reference data', 'Defines the graph structure for GNN spatial correlation (Section 5) and the node layout for Kriging interpolation (Section 6).']
+['Sentinel-1 InSAR data', 'Periodic satellite deformation product', 'Coarse macro-scale cross-validation input (Section 7), not part of the primary real-time path.']
+['Operator feedback events', 'False-positive / confirmed-positive labels from the Alerting System', 'Drives the automatic learning loop (Section 8).']
+
+=== TABLE 2 ===
+['Model', 'Mechanism', 'Strengths']
+['Isolation Forest', 'Isolates observations by random recursive partitioning; anomalies require fewer splits to isolate', 'Fast, robust to irrelevant features, minimal tuning, good first-pass filter.']
+['Autoencoder', 'Neural network trained to reconstruct normal-condition sensor windows; high reconstruction error indicates anomaly', 'Captures more complex, non-linear normal-behaviour patterns and subtle multi-feature drift than Isolation Forest alone.']
+
+=== TABLE 3 ===
+['Requirement', 'Target']
+['Inference latency (ingest → Risk Event published)', '≤ 15–20 seconds under normal load, leaving headroom within the platform-wide ≤30-second anomaly-to-notification budget shared with the Alerting System.']
+['Throughput / scalability', 'Support concurrent inference across multiple mine sites in the multi-tenant deployment without cross-site interference or performance degradation.']
+['Model retraining cadence', 'Scheduled periodic retraining plus on-demand trigger on significant feedback volume (Section 8.3).']
+['Explainability coverage', '100% of published Risk Events include a non-null confidence_score and explanation_text.']
+['Data isolation', 'Strict per-site_id scoping of training data, features, and inference outputs in the shared multi-tenant deployment.']
+['Auditability', 'Every Risk Event traceable to the exact model versions and contributing raw sensor windows that produced it.']
+['Macro-scale sanity checking', 'Periodic InSAR cross-validation executed on a defined schedule (e.g. aligned to Sentinel-1 revisit cadence) rather than per-inference, given satellite revisit latency.']
+
+=== TABLE 4 ===
+['Problem Statement Feature', 'Addressed In']
+['Unsupervised anomaly detection (baseline)', 'Section 4']
+['Cross-sensor, cross-node correlation (baseline)', 'Sections 3.2, 5']
+['Time-series progression forecasting (baseline)', 'Section 6.1']
+['Spatial interpolation / Kriging (baseline)', 'Section 6.2']
+['GNN / swarm-intelligence correlation (uniqueness)', 'Section 5']
+['Explainable, confidence-scored alerts (uniqueness)', 'Section 7']
+['Predictive time-to-critical countdown (uniqueness)', 'Section 6.3']
+['Automatic false-alarm learning loop (uniqueness)', 'Section 8.2']
+['Satellite InSAR data fusion (uniqueness)', 'Sections 2, 7, 11']
+['TinyML on-device inference (uniqueness)', 'Section 9']
+['Multi-tenant SaaS dashboard (uniqueness)', 'Sections 3.1, 11 (data isolation)']
+
+=== TABLE 5 ===
+['Term', 'Definition']
+['GNN', 'Graph Neural Network; models spatial correlation over the mesh topology graph.']
+['LSTM', 'Long Short-Term Memory network; a recurrent neural network architecture used for time-series forecasting.']
+['Kriging', 'A geostatistical interpolation method producing a continuous estimated surface (with uncertainty) from discrete spatial samples.']
+['Isolation Forest', 'An unsupervised anomaly-detection algorithm based on random recursive partitioning.']
+['Autoencoder', 'A neural network trained to reconstruct its input; high reconstruction error signals anomalous input.']
+['Time-to-Critical (TTC)', 'Predicted hours remaining before a zone reaches critical deformation, given the current trend.']
+['InSAR', 'Interferometric Synthetic Aperture Radar; satellite-based technique for measuring ground deformation over wide areas.']
+['Risk Event', 'The structured, versioned output artifact of the Data Inference Layer, consumed by GIS/Digital Twin and Alerting subsystems.']

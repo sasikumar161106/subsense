@@ -1,0 +1,50 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/api/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/api/server.js",
+    "dev": "nodemon --watch src/**/*.ts --exec ts-node src/api/server.ts",
+    "simulate": "ts-node src/simulator/index.ts",
+    "test": "jest",
+    "test:unit": "jest tests/phase3-unit.test.ts",
+    "test:integration": "jest tests/phase3-integration.test.ts",
+    "test:chaos": "jest tests/phase3-chaos.test.ts",
+    "test:outage": "ts-node src/scripts/simulate-outage.ts",
+    "test:load": "ts-node src/scripts/load-test.ts",
+    "test:replay": "ts-node src/scripts/historical-replay.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^5.10.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.0.1",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.5.0",
+    "@types/nodemailer": "^8.0.1",
+    "@types/supertest": "^7.2.1",
+    "@types/ws": "^8.18.1",
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.14",
+    "prisma": "^5.10.2",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

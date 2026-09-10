@@ -1,0 +1,76 @@
+{
+  "report_id": "VERIF-20260909-170721",
+  "generated_at_utc": "2026-09-09T17:07:21.791307+00:00",
+  "overall_status": "FULLY_PASSED",
+  "targets": [
+    {
+      "metric_name": "Recall",
+      "target_specification": ">=0.98",
+      "measured_value": 0.98,
+      "status": "PASSED",
+      "sample_size": 120,
+      "minimum_required_samples": 25,
+      "details": "Observed TP=49, FN=1 across 120 benchmark scenarios."
+    },
+    {
+      "metric_name": "Precision",
+      "target_specification": ">=0.90",
+      "measured_value": 0.9245283018867925,
+      "status": "PASSED",
+      "sample_size": 120,
+      "minimum_required_samples": 25,
+      "details": "Observed TP=49, FP=4 across 120 benchmark scenarios."
+    },
+    {
+      "metric_name": "Warning lead time",
+      "target_specification": ">=8.0h",
+      "measured_value": 10.5,
+      "status": "PASSED",
+      "sample_size": 15,
+      "minimum_required_samples": 5,
+      "details": "Median lead time 10.50h (min 8.7h, max 13.0h)."
+    },
+    {
+      "metric_name": "False alarm rate",
+      "target_specification": "<0.05 / node / month",
+      "measured_value": 0.03333333333333333,
+      "status": "PASSED",
+      "sample_size": 1800,
+      "minimum_required_samples": 30,
+      "details": "Observed 2 false alarms across 60.00 node-months of operation."
+    },
+    {
+      "metric_name": "Packet delivery",
+      "target_specification": ">96.5%",
+      "measured_value": 0.978,
+      "status": "PASSED",
+      "sample_size": 10000,
+      "minimum_required_samples": 500,
+      "details": "Delivered 9780/10000 mesh telemetry packets (97.80%)."
+    },
+    {
+      "metric_name": "Forecast calibration (ECE)",
+      "target_specification": "<0.08",
+      "measured_value": 0.0452,
+      "status": "PASSED",
+      "sample_size": 48,
+      "minimum_required_samples": 24,
+      "details": "Conformal quantile calibration ECE measured at 0.0452 across 48h horizon."
+    },
+    {
+      "metric_name": "Edge/cloud parity",
+      "target_specification": ">94.0%",
+      "measured_value": 1.0,
+      "status": "PASSED",
+      "sample_size": 250,
+      "minimum_required_samples": 50,
+      "details": "Dual inference agreement within 5% tolerance: 100.00%."
+    }
+  ],
+  "summary_counts": {
+    "PASSED": 7,
+    "FAILED": 0,
+    "INSUFFICIENT_DATA": 0
+  },
+  "report_sha256_signature": "d0edbd2700aec9d398406c87b0230e8d183e59f756abbe601fc122989ee9606d"
+}

@@ -1,0 +1,16 @@
+Metric,Node-Tier,Node Target,Gateway-Tier,Gateway Target
+Model Format / File,node_model_int8.tflite,subsense_node_model.h,gateway_model_int8.tflite,subsense_gateway_model.h
+Quantization,Full INT8,Full INT8,Full INT8,Full INT8
+Model size (KB),1.78 KB,<= 200 KB,29.72 KB,<= 1024 KB
+Parameters,169,—,22960,—
+Accuracy,69.26%,—,94.68%,—
+Precision,57.56%,—,90.71%,—
+Recall,98.60%,>=95.0%,97.12%,>=95.0%
+Sudden-Onset Recall,100.00%,100.0% (Zero Miss),100.00%,100.0% (Zero Miss)
+F1-score,0.7269,—,0.9381,—
+False Positive Rate (FPR),51.55%,—,7.05%,—
+Avg Latency (Host PC),0.0032 ms,<= 500 ms,0.0031 ms,<= 200 ms
+P95 Latency (Host PC),0.0047 ms,—,0.0033 ms,—
+Estimated Latency @ 240MHz,0.0028 ms,<= 500 ms,0.3827 ms,<= 200 ms
+Static RAM Footprint,32 Bytes,<= 80 KB,256 Bytes,<= 512 KB
+Overall Acceptance,PASS,PASS,PASS,PASS

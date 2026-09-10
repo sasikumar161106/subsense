@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AlertSeverity {
+  Advisory
+  Warning
+  Critical
+}
+
+enum AlertStatus {
+  Active
+  Escalated
+  De_escalated @map("De-escalated")
+  Resolved
+  Retracted
+}
+
+enum AlertSource {
+  Edge
+  Cloud
+}
+
+enum DeliveryChannel {
+  Siren
+  SMS
+  Email
+  PushNotification
+  DashboardBanner
+  VoiceIVR
+  CommunitySMS
+}
+
+enum DeliveryStatus {
+  Queued
+  Sent
+  Delivered
+  Failed
+  Retrying
+}
+
+enum FeedbackVerdict {
+  Confirmed
+  FalsePositive
+  Unclear
+  HardwareDefect
+}
+
+model Alert {
+  alert_id               String          @id @default(uuid()) @db.Uuid
+  tenant_id              String          @db.Uuid
+  risk_zone_id           String          @db.Uuid
+  severity               AlertSeverity
+  status                 AlertStatus
+  confidence_score       Float
+  time_to_critical_hours Float?
+  explanation            String          @db.Text
+  contributing_nodes     String[]        @db.Uuid
+  contributing_sensors   String[]        @db.Text
+  source                 AlertSource
+  idempotency_key        String?         @unique
+  created_at             DateTime        @default(now()) @db.Timestamptz
+  updated_at             DateTime        @updatedAt @db.Timestamptz
+
+  deliveries             AlertDelivery[]
+  feedbacks              AlertFeedback[]
+  audit_logs             AuditLog[]
+
+  @@index([risk_zone_id, status])
+  @@index([created_at])
+  @@map("alerts")
+}
+
+model AlertDelivery {
+  delivery_id     String          @id @default(uuid()) @db.Uuid
+  alert_id        String          @db.Uuid
+  alert           Alert           @relation(fields: [alert_id], references: [alert_id], onDelete: Cascade)
+  channel         DeliveryChannel
+  recipient_ref   String          @db.Text
+  delivery_status DeliveryStatus
+  attempted_at    DateTime        @default(now()) @db.Timestamptz
+  delivered_at    DateTime?       @db.Timestamptz
+
+  @@index([alert_id])
+  @@map("alert_deliveries")
+}
+
+model AlertFeedback {
+  feedback_id  String          @id @default(uuid()) @db.Uuid
+  alert_id     String          @db.Uuid
+  alert        Alert           @relation(fields: [alert_id], references: [alert_id], onDelete: Cascade)
+  operator_id  String          @db.Uuid
+  verdict      FeedbackVerdict
+  notes        String?         @db.Text
+  submitted_at DateTime        @default(now()) @db.Timestamptz
+
+  @@index([alert_id])
+  @@map("alert_feedbacks")
+}
+
+model CommunityRegistrant {
+  registrant_id      String  @id @default(uuid()) @db.Uuid
+  tenant_id          String  @db.Uuid
+  risk_zone_id       String  @db.Uuid
+  phone_number       String  @db.Text
+  preferred_language String  @db.VarChar(10)
+  opted_in           Boolean @default(false)
+
+  @@index([tenant_id, risk_zone_id])
+  @@map("community_registrants")
+}
+
+model AuditLog {
+  log_id     String   @id @default(uuid()) @db.Uuid
+  alert_id   String   @db.Uuid
+  alert      Alert    @relation(fields: [alert_id], references: [alert_id], onDelete: Cascade)
+  transition String   @db.VarChar(50)
+  timestamp  DateTime @default(now()) @db.Timestamptz
+  snapshot   Json
+  metadata   Json?
+
+  @@index([alert_id])
+  @@index([timestamp])
+  @@map("audit_log")
+}

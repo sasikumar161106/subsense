@@ -1,0 +1,51 @@
+site_id: "SITE-JHARIA-04"
+site_name: "Jharia Coalfield Panel 7 NE"
+tenant_id: "COAL-INDIA-BCCL"
+utm_epsg: 32645
+bounds_utm: [442000.0, 2631200.0, 443000.0, 2632200.0]  # min_x, min_y, max_x, max_y
+centroid_wgs84:
+  lat: 23.7915
+  lon: 86.4335
+
+known_nodes:
+  - id: "N-014"
+    utm_x: 442420.0
+    utm_y: 2631650.0
+    elevation_m: 185.2
+    lat: 23.7915
+    lon: 86.4335
+  - id: "N-015"
+    utm_x: 442480.0
+    utm_y: 2631680.0
+    elevation_m: 186.0
+    lat: 23.7918
+    lon: 86.4341
+  - id: "N-021"
+    utm_x: 442450.0
+    utm_y: 2631720.0
+    elevation_m: 185.7
+    lat: 23.7921
+    lon: 86.4338
+  - id: "N-022"
+    utm_x: 442550.0
+    utm_y: 2631760.0
+    elevation_m: 187.1
+    lat: 23.7925
+    lon: 86.4348
+  - id: "N-030"
+    utm_x: 442350.0
+    utm_y: 2631550.0
+    elevation_m: 184.5
+    lat: 23.7906
+    lon: 86.4328
+  - id: "N-031"
+    utm_x: 442650.0
+    utm_y: 2631850.0
+    elevation_m: 188.0
+    lat: 23.7933
+    lon: 86.4358
+
+threshold_overrides:
+  anomaly_threshold: 0.60
+  correlation_threshold: 0.65
+  critical_displacement_mm: 40.0
