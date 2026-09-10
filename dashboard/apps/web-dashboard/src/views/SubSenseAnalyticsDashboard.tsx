@@ -43,7 +43,9 @@ import {
   Eye,
   Terminal,
 } from "lucide-react";
-import { wsService, playAudibleAlertChime } from "../services/socket";
+import { wsService, playAudibleAlertChime, startContinuousSiren, stopContinuousSiren } from "../services/socket";
+import { JudgeDemoConsole } from "../components/JudgeDemoConsole";
+import { OledDisplayMirror } from "../components/OledDisplayMirror";
 import { useAuth } from "../contexts/AuthContext";
 import { useTenant } from "../contexts/TenantContext";
 import { fetchApi } from "../services/api";
@@ -335,6 +337,155 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
   // Global Search Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // ==========================================================================
+  // JUDGE DEMO & SCENARIO SIMULATION STATE (SIH 2026)
+  // ==========================================================================
+  const [demoScenario, setDemoScenario] = useState<"normal" | "warning" | "critical" | "mesh_drop">("normal");
+  const [demoTilt, setDemoTilt] = useState<number>(0.85);
+  const [demoVib, setDemoVib] = useState<number>(0.14);
+  const [demoAnomaly, setDemoAnomaly] = useState<number>(0.08);
+  const [isSirenActive, setIsSirenActive] = useState<boolean>(false);
+  const [showOledMirror, setShowOledMirror] = useState<boolean>(true);
+  const [isStreamingActive, setIsStreamingActive] = useState<boolean>(true);
+
+  // Automatic Real-Time Telemetry Simulation Loop (1.2s tick)
+  useEffect(() => {
+    if (!isStreamingActive) return;
+    const interval = setInterval(() => {
+      setSecondsAgo(0);
+      setTotalPacketsReceived((prev) => prev + 1);
+
+      if (demoScenario === "normal") {
+        const jitter = (Math.random() - 0.5) * 0.04;
+        const newTilt = Math.max(0.7, Math.min(1.05, demoTilt + jitter));
+        const newVib = Math.max(0.08, Math.min(0.22, demoVib + jitter * 0.5));
+        setDemoTilt(newTilt);
+        setDemoVib(newVib);
+
+        setSensors((prev) => {
+          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
+          if (!n042) return prev;
+          return {
+            ...prev,
+            "SS-PANEL7-N042": {
+              ...n042,
+              tilt: parseFloat(newTilt.toFixed(2)),
+              vib: parseFloat(newVib.toFixed(2)),
+              anomaly: 0.08,
+              status: "Healthy",
+              health: "Good",
+            },
+          };
+        });
+      } else if (demoScenario === "warning") {
+        const jitter = (Math.random() - 0.5) * 0.1;
+        const newTilt = Math.max(2.1, Math.min(2.7, demoTilt + jitter));
+        const newVib = Math.max(0.45, Math.min(0.75, demoVib + jitter * 0.5));
+        setDemoTilt(newTilt);
+        setDemoVib(newVib);
+
+        setSensors((prev) => {
+          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
+          if (!n042) return prev;
+          return {
+            ...prev,
+            "SS-PANEL7-N042": {
+              ...n042,
+              tilt: parseFloat(newTilt.toFixed(2)),
+              vib: parseFloat(newVib.toFixed(2)),
+              anomaly: 0.52,
+              status: "At Risk",
+              health: "Fair",
+            },
+          };
+        });
+      } else if (demoScenario === "critical") {
+        const jitter = (Math.random() - 0.5) * 0.15;
+        const newTilt = Math.max(4.6, Math.min(5.2, demoTilt + jitter));
+        const newVib = Math.max(1.2, Math.min(1.8, demoVib + jitter * 0.5));
+        setDemoTilt(newTilt);
+        setDemoVib(newVib);
+
+        setSensors((prev) => {
+          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
+          if (!n042) return prev;
+          return {
+            ...prev,
+            "SS-PANEL7-N042": {
+              ...n042,
+              tilt: parseFloat(newTilt.toFixed(2)),
+              vib: parseFloat(newVib.toFixed(2)),
+              anomaly: 0.96,
+              status: "Critical",
+              health: "Poor",
+            },
+          };
+        });
+      }
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [isStreamingActive, demoScenario, demoTilt, demoVib]);
+
+  const handleTriggerScenario = (scenario: "normal" | "warning" | "critical" | "mesh_drop") => {
+    setDemoScenario(scenario);
+
+    if (scenario === "normal") {
+      stopContinuousSiren();
+      setIsSirenActive(false);
+      setDemoTilt(0.85);
+      setDemoVib(0.14);
+      setDemoAnomaly(0.08);
+      setSystemBanner("Mine Environment Stabilized • Status: Nominal");
+      setTimeout(() => setSystemBanner(null), 3000);
+    } else if (scenario === "warning") {
+      stopContinuousSiren();
+      setIsSirenActive(false);
+      setDemoTilt(2.35);
+      setDemoVib(0.58);
+      setDemoAnomaly(0.52);
+      playAudibleAlertChime("warning");
+      setSystemBanner("Advisory: Strata Micro-Fracture Creep in Panel 7 (Tilt: 2.35°)");
+      setTimeout(() => setSystemBanner(null), 4000);
+    } else if (scenario === "critical") {
+      setDemoTilt(4.85);
+      setDemoVib(1.45);
+      setDemoAnomaly(0.96);
+      setIsSirenActive(true);
+      startContinuousSiren();
+
+      const newCriticalAlert: AlertLifecycleEvent = {
+        alert_id: `ALT-CRIT-${Date.now().toString().slice(-4)}`,
+        tenant_id: currentTenantId,
+        site_id: currentSiteId,
+        zone_id: "Panel 7 / West Face",
+        severity: "critical",
+        state: "new",
+        raised_at: new Date().toISOString(),
+        time_to_critical_hours: [0.1, 0.4],
+        confidence_score: 0.98,
+        contributing_sensors: ["tilt_deg", "vibration_rms_mm_s"],
+        explanation_summary: "CRITICAL: Physical MPU6050 tilt breached 4.85° (Threshold: 4.00°). High-frequency vibration pulses indicate imminent roof strata delamination. On-device edge siren actuated (<5µs).",
+        acknowledged_by: null,
+        acknowledged_at: null,
+        escalated_at: null,
+      };
+
+      setActiveAlerts((prev) => [newCriticalAlert, ...prev]);
+      setSystemBanner("🚨 CRITICAL DRILL TRIGGERED: Tilt 4.85° > 4.00° • Edge Siren Actuated (<5µs) • Evacuate Panel 7!");
+    } else if (scenario === "mesh_drop") {
+      setSystemBanner("⚡ Mesh Multi-Hop Reroute: Direct line severed • Telemetry routing via Relay Node • Zero Loss");
+      setTimeout(() => setSystemBanner(null), 5000);
+    }
+  };
+
+  const handleSilenceSiren = () => {
+    stopContinuousSiren();
+    setIsSirenActive(false);
+    setSystemBanner("Audible Edge Siren Silenced by Control Room Protocol");
+    setTimeout(() => setSystemBanner(null), 3000);
+  };
+
   // --------------------------------------------------------------------------
   // LIVE WEBSOCKET SUBSCRIPTION
   // --------------------------------------------------------------------------
@@ -571,6 +722,24 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
       )}
 
       {/* ========================================================= */}
+      {/* SIH 2026 JUDGE LIVE EVALUATION DEMO CONSOLE               */}
+      {/* ========================================================= */}
+      <JudgeDemoConsole
+        onTriggerScenario={handleTriggerScenario}
+        activeScenario={demoScenario}
+        packetsCount={totalPacketsReceived}
+        isStreaming={isStreamingActive}
+        onToggleStreaming={() => setIsStreamingActive(!isStreamingActive)}
+        currentTilt={demoTilt}
+        currentVib={demoVib}
+        currentAnomaly={demoAnomaly}
+        sirenActive={isSirenActive}
+        onSilenceSiren={handleSilenceSiren}
+        onToggleOledMirror={() => setShowOledMirror(!showOledMirror)}
+        showOledMirror={showOledMirror}
+      />
+
+      {/* ========================================================= */}
       {/* 1. TOP NAV BAR WITH ALL 4 OPERATOR PROFILES               */}
       {/* ========================================================= */}
       <header className="h-14 bg-[#0A101D] border-b border-[#162238] px-5 flex items-center justify-between gap-4 sticky top-0 z-40">
@@ -775,8 +944,8 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
             )}
             {activeOperator.role === "mine_operator" && (
               <button
-                onClick={() => alert("EVACUATION PROTOCOL TEST: Surface sirens armed.")}
-                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors"
+                onClick={() => handleTriggerScenario("critical")}
+                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors animate-pulse"
               >
                 <AlertOctagon className="w-3 h-3" />
                 <span>Test Evacuation Siren</span>
@@ -2285,6 +2454,19 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
             </div>
           </div>
         </div>
+      )}
+
+      {/* Physical Sensor Node OLED Live Hardware Mirror */}
+      {showOledMirror && (
+        <OledDisplayMirror
+          nodeId="SS-PANEL7-N042"
+          tilt={demoTilt}
+          vib={demoVib}
+          anomalyScore={demoAnomaly}
+          packetsCount={totalPacketsReceived}
+          sirenActive={isSirenActive}
+          onClose={() => setShowOledMirror(false)}
+        />
       )}
     </div>
   );

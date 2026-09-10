@@ -4,6 +4,59 @@ type TelemetryListener = (record: NodeTelemetryRecord) => void;
 type AlertListener = (alert: AlertLifecycleEvent, eventType: string) => void;
 
 let audioCtx: AudioContext | null = null;
+let sirenInterval: any = null;
+let sirenOsc: OscillatorNode | null = null;
+let sirenGain: GainNode | null = null;
+
+export function startContinuousSiren() {
+  try {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+
+    if (sirenInterval) return; // already active
+
+    let toggle = false;
+    const playPulse = () => {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(toggle ? 960 : 770, now);
+      toggle = !toggle;
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.4);
+    };
+
+    playPulse();
+    sirenInterval = setInterval(playPulse, 420);
+  } catch (e) {
+    console.error("Audio error:", e);
+  }
+}
+
+export function stopContinuousSiren() {
+  if (sirenInterval) {
+    clearInterval(sirenInterval);
+    sirenInterval = null;
+  }
+}
 
 export function playAudibleAlertChime(severity: "warning" | "critical") {
   try {
