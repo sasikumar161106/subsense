@@ -41,7 +41,8 @@ class CanonicalSensorReading(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     node_id: str = Field(min_length=1, max_length=64, description="Node identifier e.g. SS-NODE-01")
-    site_id: str = Field(default="SITE-DEMO-01", description="Mine site identifier")
+    tenant_id: Optional[str] = Field(default="tenant-jharia-01", description="Multi-tenant identifier")
+    site_id: str = Field(default="PANEL7-JHARIA", description="Mine site identifier")
     zone_id: str = Field(default="PANEL-1-ZONE-01", description="Mining panel/zone identifier")
     timestamp: datetime = Field(description="ISO-8601 UTC timestamp")
     readings: ReadingsModel

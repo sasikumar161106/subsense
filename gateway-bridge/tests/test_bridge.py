@@ -42,7 +42,8 @@ class TestGatewayBridge(unittest.TestCase):
 
         # 1. Structure validation
         self.assertEqual(canonical["node_id"], "SS-NODE-01")
-        self.assertEqual(canonical["site_id"], "SITE-DEMO-01")
+        self.assertEqual(canonical["site_id"], "PANEL7-JHARIA")
+        self.assertEqual(canonical["tenant_id"], "tenant-jharia-01")
         self.assertEqual(canonical["zone_id"], "PANEL-1-ZONE-01")
         self.assertEqual(canonical["timestamp"], "2026-09-10T11:15:00Z")
 

@@ -71,9 +71,10 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     - Only tilt and vibration may have numeric values.
     - displacement and crack are ALWAYS None with availability False.
     """
-    # Extract node ID
+    # Extract node and tenant/site identifiers
     node_id = raw.get("node_id") or raw.get("node") or "SS-NODE-01"
-    site_id = raw.get("site_id") or "SITE-DEMO-01"
+    site_id = raw.get("site_id") or "PANEL7-JHARIA"
+    tenant_id = raw.get("tenant_id") or "tenant-jharia-01"
     zone_id = raw.get("zone_id") or "PANEL-1-ZONE-01"
 
     # Extract timestamp from various possible firmware keys
@@ -149,6 +150,7 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     canonical: Dict[str, Any] = {
         "node_id": str(node_id),
         "site_id": str(site_id),
+        "tenant_id": str(tenant_id),
         "zone_id": str(zone_id),
         "timestamp": timestamp_iso,
         "readings": {

@@ -281,6 +281,7 @@ def ingest_telemetry(canonical: CanonicalSensorReading):
         "status": "INGESTED",
         "row_id": row_id,
         "node_id": canonical.node_id,
+        "tenant_id": canonical.tenant_id,
         "site_id": canonical.site_id,
         "zone_id": canonical.zone_id,
         "timestamp": canonical.timestamp.isoformat(),
