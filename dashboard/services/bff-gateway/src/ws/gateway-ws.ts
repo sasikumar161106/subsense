@@ -201,6 +201,23 @@ export class GatewayWebSocketServer {
     }, 2500);
   }
 
+  static broadcastTelemetry(record: any) {
+    const payload = JSON.stringify({
+      event: "telemetry",
+      record,
+    });
+
+    for (const client of this.clients) {
+      if (client?.socket && client.socket.readyState === 1) {
+        try {
+          client.socket.send(payload);
+        } catch {
+          // ignore closed socket
+        }
+      }
+    }
+  }
+
   static stop() {
     if (this.telemetryInterval) {
       clearInterval(this.telemetryInterval);

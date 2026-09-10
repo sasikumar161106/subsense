@@ -5,6 +5,8 @@ import {
   DgmsReportRequestPayloadSchema,
 } from "@subsense/shared";
 
+import { GatewayWebSocketManager } from "../ws/gateway-ws";
+
 export const contractsRoutes: FastifyPluginAsync = async (fastify) => {
   // 14.1 Telemetry Contract Validator & Mock
   fastify.post("/api/v1/contracts/validate/14.1-telemetry", async (request, reply) => {
@@ -113,5 +115,12 @@ export const contractsRoutes: FastifyPluginAsync = async (fastify) => {
       include_kriging_risk_maps: true,
       include_audit_trail: true,
     };
+  });
+
+  // Real Physical Telemetry Ingestion Broadcast
+  fastify.post("/api/v1/telemetry/broadcast", async (request, reply) => {
+    const record = request.body as any;
+    GatewayWebSocketManager.broadcastTelemetry(record);
+    return { status: "BROADCASTED", node_id: record?.node_id };
   });
 };
