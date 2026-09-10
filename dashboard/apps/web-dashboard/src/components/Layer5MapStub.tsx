@@ -27,6 +27,8 @@ interface Layer5MapStubProps {
   className?: string;
 }
 
+const GIS_URL = (import.meta as any).env?.VITE_GIS_URL || "http://localhost:8001";
+
 export const Layer5MapStub: React.FC<Layer5MapStubProps> = ({
   selectedNodeId,
   onSelectNode,
@@ -37,6 +39,7 @@ export const Layer5MapStub: React.FC<Layer5MapStubProps> = ({
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [viewMode, setViewMode] = useState<"map" | "3d">("map");
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [tileError, setTileError] = useState<boolean>(false);
 
   // Nodes distributed across Jharia Panel 7 coordinates
   const nodes: MapNode[] = [
@@ -120,84 +123,113 @@ export const Layer5MapStub: React.FC<Layer5MapStubProps> = ({
 
       {/* Map Body Canvas */}
       <div className="relative flex-1 bg-slate-950 min-h-[360px] overflow-hidden select-none">
-        {/* Floating Controls: Compass, Zoom In/Out, Reset */}
-        <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
-          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center justify-center shadow-md">
-            <Compass className="w-4 h-4 text-cyan-400 animate-pulse" />
+        {viewMode === "3d" ? (
+          <div className="w-full h-full min-h-[360px] relative bg-slate-950 flex flex-col items-center justify-center">
+            <iframe
+              src={`${GIS_URL}/dashboard/`}
+              title="SubSense 3D Digital Twin (GIS Layer 5)"
+              className="w-full h-full min-h-[360px] border-0"
+              onError={() => {}}
+            />
+            <div className="absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] text-slate-300 flex items-center gap-2 shadow-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Layer 5 Digital Twin (Port 8001)</span>
+            </div>
           </div>
-          <button
-            onClick={handleZoomIn}
-            title="Zoom In"
-            className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleZoomOut}
-            title="Zoom Out"
-            className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleReset}
-            title="Reset View"
-            className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
+        ) : (
+          <>
+            {/* Floating Controls: Compass, Zoom In/Out, Reset */}
+            <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+              <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center justify-center shadow-md">
+                <Compass className="w-4 h-4 text-cyan-400 animate-pulse" />
+              </div>
+              <button
+                onClick={handleZoomIn}
+                title="Zoom In"
+                className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleZoomOut}
+                title="Zoom Out"
+                className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleReset}
+                title="Reset View"
+                className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors shadow-md"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
 
-        {/* Floating Top Left Badge */}
-        <div className="absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] text-slate-300 flex items-center gap-2 shadow-md">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span>Panel 7 Strata Basin</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-amber-400 font-bold">Zoom: {zoomLevel.toFixed(1)}x</span>
-        </div>
+            {/* Floating Top Left Badge */}
+            <div className="absolute top-3 left-3 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-[10px] text-slate-300 flex items-center gap-2 shadow-md">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span>Panel 7 Strata Basin</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-amber-400 font-bold">Zoom: {zoomLevel.toFixed(1)}x</span>
+            </div>
 
-        {/* SVG GIS Layer */}
-        <svg
-          viewBox="0 0 1000 650"
-          className="w-full h-full cursor-grab active:cursor-grabbing transition-transform duration-300"
-          style={{
-            transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
-            transformOrigin: "center center",
-          }}
-        >
-          <defs>
-            <pattern id="gis-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(51, 65, 85, 0.2)" strokeWidth="1" />
-            </pattern>
-            <radialGradient id="delamination-core" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
-              <stop offset="60%" stopColor="#ef4444" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="warning-perimeter" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-            </radialGradient>
-          </defs>
+            {/* SVG GIS Layer */}
+            <svg
+              viewBox="0 0 1000 650"
+              className="w-full h-full cursor-grab active:cursor-grabbing transition-transform duration-300"
+              style={{
+                transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+                transformOrigin: "center center",
+              }}
+            >
+              <defs>
+                <pattern id="gis-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(51, 65, 85, 0.2)" strokeWidth="1" />
+                </pattern>
+                <radialGradient id="delamination-core" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
+                  <stop offset="60%" stopColor="#ef4444" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="warning-perimeter" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                </radialGradient>
+              </defs>
 
-          {/* Grid Background */}
-          <rect width="1000" height="650" fill="#070b14" />
-          <rect width="1000" height="650" fill="url(#gis-grid)" />
+              {/* Grid Background */}
+              <rect width="1000" height="650" fill="#070b14" />
+              <rect width="1000" height="650" fill="url(#gis-grid)" />
 
-          {/* Panel Area Boundary Polygon */}
-          <polygon
-            points="180,110 820,130 840,530 140,510"
-            fill="rgba(6, 182, 212, 0.04)"
-            stroke="#06b6d4"
-            strokeWidth="2"
-            strokeDasharray="6 4"
-          />
+              {/* Live GIS Layer 5 Kriging Tile Overlay */}
+              {!tileError && (
+                <image
+                  href={`${GIS_URL}/api/v1/tiles/tenant-jharia-01/PANEL7-JHARIA/14/12124/7016.png`}
+                  x="180"
+                  y="110"
+                  width="660"
+                  height="420"
+                  opacity="0.45"
+                  preserveAspectRatio="none"
+                  onError={() => setTileError(true)}
+                />
+              )}
 
-          {/* Contour Lines of Subsidence Trough */}
-          <ellipse cx="480" cy="320" rx="340" ry="200" fill="none" stroke="#1e293b" strokeWidth="1.5" />
-          <ellipse cx="460" cy="330" rx="240" ry="140" fill="none" stroke="#334155" strokeWidth="1.5" />
-          <ellipse cx="450" cy="340" rx="160" ry="95" fill="url(#warning-perimeter)" stroke="#d97706" strokeWidth="1.5" />
-          <ellipse cx="440" cy="350" rx="90" ry="55" fill="url(#delamination-core)" stroke="#ef4444" strokeWidth="2" />
+              {/* Panel Area Boundary Polygon */}
+              <polygon
+                points="180,110 820,130 840,530 140,510"
+                fill="rgba(6, 182, 212, 0.04)"
+                stroke="#06b6d4"
+                strokeWidth="2"
+                strokeDasharray="6 4"
+              />
+
+              {/* Contour Lines of Subsidence Trough */}
+              <ellipse cx="480" cy="320" rx="340" ry="200" fill="none" stroke="#1e293b" strokeWidth="1.5" />
+              <ellipse cx="460" cy="330" rx="240" ry="140" fill="none" stroke="#334155" strokeWidth="1.5" />
+              <ellipse cx="450" cy="340" rx="160" ry="95" fill="url(#warning-perimeter)" stroke="#d97706" strokeWidth="1.5" />
+              <ellipse cx="440" cy="350" rx="90" ry="55" fill="url(#delamination-core)" stroke="#ef4444" strokeWidth="2" />
 
           {/* Mesh Edges */}
           <line x1="620" y1="208" x2="440" y2="260" stroke="#0ea5e9" strokeWidth="1.5" strokeOpacity="0.6" />
@@ -274,6 +306,8 @@ export const Layer5MapStub: React.FC<Layer5MapStubProps> = ({
           <div className="w-16 h-1 border-b-2 border-l-2 border-r-2 border-slate-400 mb-0.5"></div>
           <span>100 m</span>
         </div>
+          </>
+        )}
       </div>
 
       {/* Map Legend Footer */}
