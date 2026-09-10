@@ -75,6 +75,7 @@ class ScoreRequest(BaseModel):
     window_end: datetime
     feature_vector_12d: List[float] = Field(min_length=12, max_length=12)
     confidence_override: Optional[float] = None
+    sensor_availability: Optional[Dict[str, bool]] = None
 
 
 class CorrelateRequest(BaseModel):
@@ -119,7 +120,7 @@ def score_vector(req: ScoreRequest):
             detail=f"Expected {FEATURE_VECTOR_DIM}-dimensional feature vector, got {len(vec)}",
         )
 
-    res = ensemble_service.predict(vec)
+    res = ensemble_service.predict(vec, sensor_availability=req.sensor_availability)
     t_end = time.perf_counter()
     latency_ms = (t_end - t_start) * 1000.0
 
@@ -135,6 +136,7 @@ def score_vector(req: ScoreRequest):
         model_signature=res.model_signature,
         confidence=confidence,
         inference_latency_ms=round(latency_ms, 2),
+        sensor_availability=req.sensor_availability,
     )
 
     # Enforce validation and serialization

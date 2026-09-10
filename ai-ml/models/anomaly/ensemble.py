@@ -69,12 +69,17 @@ class AnomalyEnsemble:
         self.is_fitted = True
         return self
 
-    def predict(self, feature_vector: np.ndarray) -> AnomalyInferenceResult:
+    def predict(
+        self,
+        feature_vector: np.ndarray,
+        sensor_availability: Optional[Dict[str, bool]] = None,
+    ) -> AnomalyInferenceResult:
         """
         Runs composite inference on a 12-D normalized feature vector.
         Guarantees:
         1. S_node in [0.0, 1.0]
         2. contributing_sensors is NEVER empty
+        3. contributing_sensors NEVER contains sensors marked unavailable in sensor_availability
         """
         assert feature_vector.ndim == 1, "Expected 1D feature vector"
         assert len(feature_vector) == FEATURE_VECTOR_DIM, f"Expected {FEATURE_VECTOR_DIM} features"
@@ -97,7 +102,9 @@ class AnomalyEnsemble:
         s_node = float(np.clip(s_node, 0.0, 1.0))
 
         # 4. Explainability Attribution (contributing_sensors)
-        contributing_sensors = self._extract_contributing_sensors(per_feat_mse, feature_vector)
+        contributing_sensors = self._extract_contributing_sensors(
+            per_feat_mse, feature_vector, sensor_availability=sensor_availability
+        )
         assert len(contributing_sensors) > 0, "FATAL: contributing_sensors must never be empty!"
 
         is_anomaly = bool(s_node >= self.anomaly_threshold)
@@ -116,11 +123,13 @@ class AnomalyEnsemble:
         self,
         per_feat_mse: np.ndarray,
         feature_vector: np.ndarray,
+        sensor_availability: Optional[Dict[str, bool]] = None,
     ) -> List[str]:
         """
         Aggregates error contributions to physical sensor modalities:
         tilt_deg, displacement_mm, vibration_rms_mm_s, crack_index.
         Always returns at least one sensor (never empty).
+        If sensor_availability is specified, sensors marked False are strictly excluded.
         """
         sensor_weights: Dict[str, float] = {
             "tilt_deg": 0.0,
@@ -136,6 +145,25 @@ class AnomalyEnsemble:
             if target_sensor in sensor_weights:
                 # Add normalized square error plus relative feature magnitude
                 sensor_weights[target_sensor] += float(val) + 0.1 * abs(float(feature_vector[i]))
+
+        # Filter out unavailable sensors if sensor_availability is provided
+        if sensor_availability:
+            def _is_sensor_available(s_name: str) -> bool:
+                aliases = {
+                    "tilt_deg": ["tilt_deg", "tilt"],
+                    "vibration_rms_mm_s": ["vibration_rms_mm_s", "vibration"],
+                    "displacement_mm": ["displacement_mm", "displacement"],
+                    "crack_index": ["crack_index", "crack"],
+                }
+                keys = aliases.get(s_name, [s_name])
+                for k in keys:
+                    if k in sensor_availability and sensor_availability[k] is False:
+                        return False
+                return True
+
+            filtered_weights = {s: w for s, w in sensor_weights.items() if _is_sensor_available(s)}
+            if filtered_weights:
+                sensor_weights = filtered_weights
 
         # Sort sensors by total contribution descending
         sorted_sensors = sorted(sensor_weights.items(), key=lambda item: item[1], reverse=True)

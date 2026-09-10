@@ -4,8 +4,10 @@ Enforces Explainability-by-Construction: contributing_sensors must NEVER be empt
 """
 
 from datetime import datetime
-from typing import Annotated, List, Union, Dict, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Annotated, List, Union, Dict, Any, Optional
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
+from explainability.alert_schema import check_sensor_availability
 
 
 class EmptyContributingSensorsError(ValueError):
@@ -32,6 +34,7 @@ class ModelOutputEvent(BaseModel):
     model_signature: Annotated[str, Field(min_length=1, description="Versioned signature e.g. isoforest_ae_ensemble_v3.2.1")]
     confidence: Annotated[float, Field(ge=0.0, le=1.0, description="Calibrated confidence metric")]
     inference_latency_ms: Annotated[float, Field(ge=0.0, description="Inference execution latency in milliseconds")]
+    sensor_availability: Optional[Dict[str, bool]] = Field(default=None, description="Hardware instrument availability flags")
 
     @field_validator("contributing_sensors")
     @classmethod
@@ -48,6 +51,16 @@ class ModelOutputEvent(BaseModel):
                 )
         return v
 
+    @model_validator(mode="after")
+    def validate_sensor_attribution_against_availability(self) -> "ModelOutputEvent":
+        if self.sensor_availability and isinstance(self.sensor_availability, dict):
+            for s in self.contributing_sensors:
+                if not check_sensor_availability(s, self.sensor_availability):
+                    raise EmptyContributingSensorsError(
+                        f"VIOLATION: Sensor '{s}' in contributing_sensors is marked unavailable in sensor_availability."
+                    )
+        return self
+
 
 def validate_and_serialize_event(payload: Union[Dict[str, Any], ModelOutputEvent]) -> str:
     """
@@ -55,9 +68,22 @@ def validate_and_serialize_event(payload: Union[Dict[str, Any], ModelOutputEvent
     Raises ValidationError or EmptyContributingSensorsError if invalid.
     """
     if isinstance(payload, dict):
+        avail = payload.get("sensor_availability")
+        if avail and isinstance(avail, dict):
+            for s in payload.get("contributing_sensors", []):
+                if not check_sensor_availability(s, avail):
+                    raise EmptyContributingSensorsError(
+                        f"VIOLATION: Sensor '{s}' in contributing_sensors is marked unavailable in sensor_availability."
+                    )
         event = ModelOutputEvent.model_validate(payload)
     else:
         event = payload
+        if event.sensor_availability and isinstance(event.sensor_availability, dict):
+            for s in event.contributing_sensors:
+                if not check_sensor_availability(s, event.sensor_availability):
+                    raise EmptyContributingSensorsError(
+                        f"VIOLATION: Sensor '{s}' in contributing_sensors is marked unavailable in sensor_availability."
+                    )
 
     # Extra programmatic assertion
     if not event.contributing_sensors or len(event.contributing_sensors) == 0:

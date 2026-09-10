@@ -9,7 +9,7 @@ Zero alerts may ship without:
 
 from datetime import datetime, timezone
 from typing import Annotated, Dict, List, Optional, Union, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 from fusion.schemas import AlertTier
 
@@ -17,6 +17,34 @@ from fusion.schemas import AlertTier
 class IncompleteExplainabilityAlertError(ValueError):
     """Raised when an alert fails the Explainability-by-Construction validation gate."""
     pass
+
+
+def check_sensor_availability(
+    sensor_name: str,
+    sensor_availability: Optional[Dict[str, bool]],
+) -> bool:
+    """
+    Returns False if the sensor is explicitly marked unavailable (False) in sensor_availability.
+    Returns True if available (True) or if not specified.
+    """
+    if not sensor_availability:
+        return True
+
+    aliases = {
+        "tilt_deg": ["tilt_deg", "tilt"],
+        "tilt": ["tilt_deg", "tilt"],
+        "vibration_rms_mm_s": ["vibration_rms_mm_s", "vibration"],
+        "vibration": ["vibration_rms_mm_s", "vibration"],
+        "displacement_mm": ["displacement_mm", "displacement"],
+        "displacement": ["displacement_mm", "displacement"],
+        "crack_index": ["crack_index", "crack"],
+        "crack": ["crack_index", "crack"],
+    }
+    keys_to_check = aliases.get(sensor_name.lower().strip(), [sensor_name.lower().strip()])
+    for k in keys_to_check:
+        if k in sensor_availability and sensor_availability[k] is False:
+            return False
+    return True
 
 
 class ValidatedAlertEvent(BaseModel):
@@ -36,7 +64,19 @@ class ValidatedAlertEvent(BaseModel):
     plain_language_summary: Annotated[str, Field(min_length=15, description="Audited natural language geotechnical summary")]
     actions: List[str] = Field(default_factory=list)
     audit_level: int = 1
+    sensor_availability: Optional[Dict[str, bool]] = Field(default=None, description="Hardware instrument availability flags")
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_sensor_attribution_against_availability(self) -> "ValidatedAlertEvent":
+        avail = self.sensor_availability or (self.metadata.get("sensor_availability") if isinstance(self.metadata, dict) else None)
+        if avail and isinstance(avail, dict):
+            for s in self.contributing_sensors:
+                if not check_sensor_availability(s, avail):
+                    raise IncompleteExplainabilityAlertError(
+                        f"VIOLATION: Alert rejected at publish gate: Sensor '{s}' in 'contributing_sensors' is marked unavailable in sensor_availability."
+                    )
+        return self
 
     @field_validator("contributing_sensors")
     @classmethod
@@ -101,11 +141,27 @@ def validate_and_gate_alert(
             raise IncompleteExplainabilityAlertError(
                 "GATE REJECTION: Missing or empty 'plain_language_summary'."
             )
+        avail = payload.get("sensor_availability") or (payload.get("metadata", {}).get("sensor_availability") if isinstance(payload.get("metadata"), dict) else None)
+        if avail and isinstance(avail, dict):
+            for s in payload.get("contributing_sensors", []):
+                if not check_sensor_availability(s, avail):
+                    raise IncompleteExplainabilityAlertError(
+                        f"GATE REJECTION: Sensor '{s}' in 'contributing_sensors' is marked unavailable in sensor_availability."
+                    )
         try:
             event = ValidatedAlertEvent.model_validate(payload)
+        except IncompleteExplainabilityAlertError:
+            raise
         except Exception as e:
             raise IncompleteExplainabilityAlertError(f"GATE REJECTION: Schema validation failed: {str(e)}") from e
     else:
         event = payload
+        avail = event.sensor_availability or (event.metadata.get("sensor_availability") if isinstance(event.metadata, dict) else None)
+        if avail and isinstance(avail, dict):
+            for s in event.contributing_sensors:
+                if not check_sensor_availability(s, avail):
+                    raise IncompleteExplainabilityAlertError(
+                        f"GATE REJECTION: Sensor '{s}' in 'contributing_sensors' is marked unavailable in sensor_availability."
+                    )
 
     return event
