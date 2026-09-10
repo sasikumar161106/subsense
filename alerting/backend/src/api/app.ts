@@ -26,6 +26,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/alerts', alertsRouter);
 app.use('/api/v1/community', communityRouter);
 app.use('/api/v1/audit', auditRouter);
+app.use('/api/v1/webhooks', webhookLimiter, webhooksRouter);
 app.use('/webhooks', webhookLimiter, webhooksRouter);
 
 // Health check endpoint

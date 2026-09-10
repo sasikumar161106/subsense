@@ -9,6 +9,7 @@ from config.settings import settings
 from src.normalizer.crs_normalizer import SpatialDataNormalizer
 from src.heatmap.tile_slicer import TileSlicer
 from src.delivery.tile_cache import MultiTenantTileCache
+from src.api.router_raster import raster_state
 
 router = APIRouter(prefix="/api/v1/tiles", tags=["Raster Tile Server (5.1 & 5.5)"])
 
@@ -56,11 +57,21 @@ async def get_tile(
     if cached_bytes is not None:
         tile_bytes = cached_bytes
     else:
+        active_grid = raster_state.get_grid(site_id)
+        if active_grid is not None:
+            risk_grid_to_use = active_grid["risk_grid"]
+            bounds_to_use = active_grid["bounds_wgs84"]
+            var_grid_to_use = active_grid["variance_grid"]
+        else:
+            risk_grid_to_use = _base_risk_grid
+            bounds_to_use = _synthetic_bounds_wgs84
+            var_grid_to_use = _base_var_grid
+
         img, meta = tile_slicer.render_tile_image(
-            risk_grid=_base_risk_grid,
-            grid_bounds_wgs84=_synthetic_bounds_wgs84,
+            risk_grid=risk_grid_to_use,
+            grid_bounds_wgs84=bounds_to_use,
             z=z, x=x, y=y,
-            variance_grid=_base_var_grid,
+            variance_grid=var_grid_to_use,
             data_currency_seconds=data_age_seconds
         )
         bio = BytesIO()

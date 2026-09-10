@@ -24,6 +24,12 @@ from insar.slc_ingestion import Sentinel1IngestionPipeline
 from insar.divergence import InSARDivergenceAnalyzer
 from .event_schema import ModelOutputEvent, validate_and_serialize_event
 from .structured_logger import DGMSAuditLogger
+from integration.alert_dispatcher import (
+    to_alert_system_contract,
+    dispatch_to_alert_system,
+    to_gis_raster_contract,
+    dispatch_to_gis,
+)
 
 app = FastAPI(
     title="SubSense Layer 4 Intelligence Engine API",
@@ -156,6 +162,38 @@ def score_vector(req: ScoreRequest):
     )
 
     return event
+
+
+@app.post("/api/v1/alerts/dispatch")
+@app.post("/v1/alerts/dispatch")
+def dispatch_alert(risk_event: Dict[str, Any]):
+    """
+    Translates and dispatches a risk event to Alert_System's webhook endpoint.
+    """
+    try:
+        res = dispatch_to_alert_system(risk_event)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Downstream Alert_System dispatch failed: {str(e)}",
+        )
+
+
+@app.post("/api/v1/raster/dispatch")
+@app.post("/v1/raster/dispatch")
+def dispatch_raster(kriging_output: Dict[str, Any]):
+    """
+    Translates and dispatches Kriging geostatistics to GIS raster ingestion endpoint.
+    """
+    try:
+        res = dispatch_to_gis(kriging_output)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Downstream GIS raster dispatch failed: {str(e)}",
+        )
 
 
 @app.post("/v1/correlate")

@@ -10,6 +10,7 @@ from src.api.router_insar import router as insar_router
 from src.api.router_digital_twin import router as twin_router
 from src.api.router_replay import router as replay_router
 from src.api.router_stream import router as stream_router
+from src.api.router_raster import router as raster_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -39,6 +40,7 @@ app.include_router(insar_router)
 app.include_router(twin_router)
 app.include_router(replay_router)
 app.include_router(stream_router)
+app.include_router(raster_router)
 
 
 # Mount web frontend static directory if exists
@@ -58,4 +60,4 @@ async def healthcheck():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.api.main:app", host="0.0.0.0", port=8001, reload=True)

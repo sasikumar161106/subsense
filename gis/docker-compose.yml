@@ -50,7 +50,7 @@ services:
     build: .
     container_name: subsense-gis-layer
     ports:
-      - "8000:8000"
+      - "8001:8001"
     environment:
       SUBSENSE_ENVIRONMENT: production
       SUBSENSE_POSTGIS_URL: postgresql://postgres:postgrespassword@postgis:5432/subsense_gis
