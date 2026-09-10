@@ -97,9 +97,9 @@ class FeaturePipeline:
         t_rel = times - times[0]  # Relative seconds from window start
 
         tilts = np.array([r.sensors.tilt_deg for r in window_records], dtype=np.float64)
-        disps = np.array([r.sensors.displacement_mm for r in window_records], dtype=np.float64)
+        disps = np.array([r.sensors.displacement_mm if r.sensors.displacement_mm is not None else 0.0 for r in window_records], dtype=np.float64)
         vibs = np.array([r.sensors.vibration_rms_mm_s for r in window_records], dtype=np.float64)
-        cracks = np.array([r.sensors.crack_index for r in window_records], dtype=np.float64)
+        cracks = np.array([r.sensors.crack_index if r.sensors.crack_index is not None else 0.0 for r in window_records], dtype=np.float64)
 
         # 1. tilt_mean
         tilt_mean = float(np.mean(tilts))

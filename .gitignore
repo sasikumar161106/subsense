@@ -33,3 +33,5 @@ data/tiles/tenant_*
 scratch/
 Tinyml model/
 
+ai-ml/data/
+

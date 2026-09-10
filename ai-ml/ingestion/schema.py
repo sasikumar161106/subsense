@@ -4,7 +4,7 @@ Adheres strictly to SUBSENSE-TDD-ML-004 Section 4.1.
 """
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Dict, Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -19,8 +19,8 @@ class SensorData(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     tilt_deg: Annotated[float, Field(description="Dual-axis MEMS inclinometer resultant angle in degrees")]
     vibration_rms_mm_s: Annotated[float, Field(ge=0.0, description="Triaxial high-frequency geophone velocity RMS (mm/s)")]
-    displacement_mm: Annotated[float, Field(description="Extensometer / crack potentiometer movement (mm)")]
-    crack_index: Annotated[float, Field(ge=0.0, le=1.0, description="Differential surface shear strain metric [0.0, 1.0]")]
+    displacement_mm: Optional[float] = Field(default=None, description="Extensometer / crack potentiometer movement (mm)")
+    crack_index: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Differential surface shear strain metric [0.0, 1.0]")
 
 
 class NodeHealthData(BaseModel):
@@ -37,3 +37,4 @@ class RawSensorRecord(BaseModel):
     gps: GPSData
     sensors: SensorData
     node_health: NodeHealthData
+    sensor_availability: Optional[Dict[str, bool]] = Field(default=None, description="Hardware sensor channel availability flags")

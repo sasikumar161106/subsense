@@ -47,6 +47,16 @@ gatv2_service = SubSenseGATv2(in_channels=13, hidden_dim=32, edge_dim=4, heads=2
 insar_pipeline = Sentinel1IngestionPipeline()
 insar_analyzer = InSARDivergenceAnalyzer(divergence_threshold_mm=8.0, mesh_buffer_radius_m=120.0)
 
+# Ingestion & Telemetry Persistence Services
+from ingestion.canonical_schema import CanonicalSensorReading, to_raw_sensor_record
+from ingestion.pipeline import IngestionPipeline
+from ingestion.telemetry_store import TelemetryStore
+from features.pipeline import FeaturePipeline
+
+ingestion_pipeline = IngestionPipeline()
+telemetry_store = TelemetryStore()
+feature_pipeline = FeaturePipeline()
+
 # Train baseline if not fitted yet with synthetic non-anomalous baseline
 def _initialize_baseline():
     if not ensemble_service.is_fitted:
@@ -194,6 +204,63 @@ def sync_edge_batch(req: EdgeSyncBatchRequest):
         "synced_events_count": ingested_count,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# =============================================================================
+# Ingestion & Telemetry Routes
+# =============================================================================
+
+@app.post("/api/v1/ingest/telemetry", status_code=status.HTTP_201_CREATED)
+@app.post("/v1/ingest/telemetry", status_code=status.HTTP_201_CREATED)
+def ingest_telemetry(canonical: CanonicalSensorReading):
+    """
+    Primary ingestion endpoint for real-time edge telemetry emitted by Gateway Bridge.
+    Validates canonical data contract, passes through physical fault validator,
+    updates rolling feature pipeline, and persists to Time-Series Telemetry Store.
+    """
+    raw_record = to_raw_sensor_record(canonical)
+    validation_result = ingestion_pipeline.validator.validate(raw_record)
+    if not validation_result.is_valid or validation_result.record is None:
+        category = validation_result.rejection.category if validation_result.rejection else "VALIDATION_FAILED"
+        err_detail = validation_result.rejection.reason if validation_result.rejection else "Validation failed"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Telemetry rejected [{category}]: {err_detail}",
+        )
+
+    # 1. Update QoS metrics
+    ingestion_pipeline.qos_tracker.record_packet(validation_result.record)
+
+    # 2. Update streaming feature extraction buffer
+    feature_pipeline.add_record(validation_result.record)
+
+    # 3. Persist to Telemetry Store (PostgreSQL / TimescaleDB / SQLite)
+    row_id = telemetry_store.insert_reading(canonical.model_dump(mode="json"))
+
+    return {
+        "status": "INGESTED",
+        "row_id": row_id,
+        "node_id": canonical.node_id,
+        "site_id": canonical.site_id,
+        "zone_id": canonical.zone_id,
+        "timestamp": canonical.timestamp.isoformat(),
+        "store": "timescale" if telemetry_store._is_postgres else "sqlite",
+    }
+
+
+@app.get("/api/v1/ingest/telemetry/{node_id}/latest")
+@app.get("/v1/ingest/telemetry/{node_id}/latest")
+def get_latest_telemetry(node_id: str):
+    """
+    Queries latest telemetry record from the telemetry store for a given node.
+    """
+    reading = telemetry_store.get_latest_reading(node_id)
+    if not reading:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No telemetry found for node '{node_id}'",
+        )
+    return reading
 
 
 # =============================================================================

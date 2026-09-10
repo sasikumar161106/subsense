@@ -102,41 +102,46 @@ class PayloadValidator:
         if now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
 
-        # 1. Parse JSON if string
-        payload = raw_input
-        if isinstance(raw_input, (str, bytes)):
-            try:
-                payload = json.loads(raw_input)
-            except Exception as e:
+        # 1. Check if already a validated RawSensorRecord instance
+        if isinstance(raw_input, RawSensorRecord):
+            record = raw_input
+            node_id = record.node_id
+            payload = record.model_dump(mode="json")
+        else:
+            payload = raw_input
+            if isinstance(raw_input, (str, bytes)):
+                try:
+                    payload = json.loads(raw_input)
+                except Exception as e:
+                    return self._reject(
+                        node_id=None,
+                        category="MALFORMED_JSON",
+                        reason=f"Payload is not valid JSON: {str(e)}",
+                        raw_payload=raw_input,
+                    )
+
+            if not isinstance(payload, dict):
                 return self._reject(
                     node_id=None,
-                    category="MALFORMED_JSON",
-                    reason=f"Payload is not valid JSON: {str(e)}",
+                    category="SCHEMA_INVALID",
+                    reason=f"Payload root must be an object/dict, got {type(payload).__name__}",
                     raw_payload=raw_input,
                 )
 
-        if not isinstance(payload, dict):
-            return self._reject(
-                node_id=None,
-                category="SCHEMA_INVALID",
-                reason=f"Payload root must be an object/dict, got {type(payload).__name__}",
-                raw_payload=raw_input,
-            )
+            node_id = str(payload.get("node_id", "")) or None
 
-        node_id = str(payload.get("node_id", "")) or None
-
-        # 2. Schema Validation via Pydantic
-        try:
-            record = RawSensorRecord.model_validate(payload)
-        except ValidationError as e:
-            errors = e.errors()
-            err_msg = "; ".join([f"{'.'.join(str(loc) for loc in err['loc'])}: {err['msg']}" for err in errors])
-            return self._reject(
-                node_id=node_id,
-                category="SCHEMA_VALIDATION_ERROR",
-                reason=err_msg,
-                raw_payload=raw_input,
-            )
+            # 2. Schema Validation via Pydantic
+            try:
+                record = RawSensorRecord.model_validate(payload)
+            except ValidationError as e:
+                errors = e.errors()
+                err_msg = "; ".join([f"{'.'.join(str(loc) for loc in err['loc'])}: {err['msg']}" for err in errors])
+                return self._reject(
+                    node_id=node_id,
+                    category="SCHEMA_VALIDATION_ERROR",
+                    reason=err_msg,
+                    raw_payload=raw_input,
+                )
 
         # 3. Timestamp Skew Checks
         rec_time = record.timestamp
@@ -173,6 +178,8 @@ class PayloadValidator:
             ("displacement_mm", s.displacement_mm),
             ("crack_index", s.crack_index),
         ]:
+            if val is None:
+                continue
             if math.isnan(val) or math.isinf(val):
                 return self._reject(
                     node_id=record.node_id,
@@ -207,34 +214,46 @@ class PayloadValidator:
                 reason=f"battery_pct={h.battery_pct} out of [0, 100]",
                 raw_payload=raw_input,
             )
+        if h.rssi_dbm < h_bounds["rssi_dbm"]["min"] or h.rssi_dbm > h_bounds["rssi_dbm"]["max"]:
+            return self._reject(
+                node_id=record.node_id,
+                category="HEALTH_BOUND_VIOLATION",
+                reason=f"rssi_dbm={h.rssi_dbm} out of [-130, 0]",
+                raw_payload=raw_input,
+            )
 
-        # 5. Rate-of-Change Checks (against previous valid sample)
-        if record.node_id in self._last_readings:
-            prev = self._last_readings[record.node_id]
-            prev_time = prev.timestamp if prev.timestamp.tzinfo else prev.timestamp.replace(tzinfo=timezone.utc)
+        # 5. Rate-of-Change Checks against previous reading
+        prev = self._last_readings.get(record.node_id)
+        if prev is not None:
+            prev_time = prev.timestamp
+            if prev_time.tzinfo is None:
+                prev_time = prev_time.replace(tzinfo=timezone.utc)
+
             dt = (rec_time - prev_time).total_seconds()
             if dt > 0.05:  # At least 50ms interval to compute derivative reliably
-                delta_tilt = abs(record.sensors.tilt_deg - prev.sensors.tilt_deg)
-                rate_tilt = delta_tilt / dt
-                max_rate_tilt = sensor_bounds["tilt_deg"].get("max_rate_deg_per_sec", 5.0)
-                if rate_tilt > max_rate_tilt:
-                    return self._reject(
-                        node_id=record.node_id,
-                        category="RATE_OF_CHANGE_EXCEEDED",
-                        reason=f"tilt_deg change rate {rate_tilt:.2f} deg/s exceeds physical limit {max_rate_tilt} deg/s (dt={dt:.2f}s)",
-                        raw_payload=raw_input,
-                    )
+                if record.sensors.tilt_deg is not None and prev.sensors.tilt_deg is not None:
+                    delta_tilt = abs(record.sensors.tilt_deg - prev.sensors.tilt_deg)
+                    rate_tilt = delta_tilt / dt
+                    max_rate_tilt = sensor_bounds["tilt_deg"].get("max_rate_deg_per_sec", 5.0)
+                    if rate_tilt > max_rate_tilt:
+                        return self._reject(
+                            node_id=record.node_id,
+                            category="RATE_OF_CHANGE_EXCEEDED",
+                            reason=f"tilt_deg change rate {rate_tilt:.2f} deg/s exceeds physical limit {max_rate_tilt} deg/s (dt={dt:.2f}s)",
+                            raw_payload=raw_input,
+                        )
 
-                delta_disp = abs(record.sensors.displacement_mm - prev.sensors.displacement_mm)
-                rate_disp = delta_disp / dt
-                max_rate_disp = sensor_bounds["displacement_mm"].get("max_rate_mm_per_sec", 50.0)
-                if rate_disp > max_rate_disp:
-                    return self._reject(
-                        node_id=record.node_id,
-                        category="RATE_OF_CHANGE_EXCEEDED",
-                        reason=f"displacement_mm change rate {rate_disp:.2f} mm/s exceeds physical limit {max_rate_disp} mm/s (dt={dt:.2f}s)",
-                        raw_payload=raw_input,
-                    )
+                if record.sensors.displacement_mm is not None and prev.sensors.displacement_mm is not None:
+                    delta_disp = abs(record.sensors.displacement_mm - prev.sensors.displacement_mm)
+                    rate_disp = delta_disp / dt
+                    max_rate_disp = sensor_bounds["displacement_mm"].get("max_rate_mm_per_sec", 50.0)
+                    if rate_disp > max_rate_disp:
+                        return self._reject(
+                            node_id=record.node_id,
+                            category="RATE_OF_CHANGE_EXCEEDED",
+                            reason=f"displacement_mm change rate {rate_disp:.2f} mm/s exceeds physical limit {max_rate_disp} mm/s (dt={dt:.2f}s)",
+                            raw_payload=raw_input,
+                        )
 
         # Validated successfully! Update state
         self._last_readings[record.node_id] = record
