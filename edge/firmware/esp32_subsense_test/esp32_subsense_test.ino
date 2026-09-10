@@ -18,6 +18,7 @@
 #include "subsense_gateway_model.h"
 #include "subsense_node_model.h"
 #include "subsense_wifi_mesh.h"
+#include "subsense_display.h"
 
 // Set to 1 if this board is GATEWAY (receives mesh packets), 0 if NODE (sends telemetry)
 #define SUBSENSE_IS_GATEWAY   0
@@ -106,6 +107,12 @@ void setup_subsense() {
 #else
     subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
     Serial.println("  [WiFi Mesh] Initialized in NODE mode (broadcasting packets).");
+
+    // 8. Initialize OLED Display (EXCLUSIVE TO SENSOR NODE)
+    bool disp_ok = subsense_display_init(21, 22, 0x3C);
+    if (disp_ok) {
+        subsense_display_boot_screen("ESP32-NODE-01", "v2.4.0");
+    }
 #endif
 }
 
@@ -420,6 +427,25 @@ void run_live_simulation() {
             digitalWrite(PIN_SIREN_LED, LOW);
         }
 
+#if !SUBSENSE_IS_GATEWAY
+        // Update OLED Health Display on Sensor Node
+        SubSenseNodeDisplayData disp_data;
+        disp_data.node_id         = "ESP32-NODE-01";
+        disp_data.tilt_deg        = tilt;
+        disp_data.vibration_rms   = vib * 9.8f * 10.0f;
+        disp_data.anomaly_score   = ev.anomaly_score;
+        disp_data.battery_percent = 94;
+        disp_data.rssi_dbm        = -68;
+        disp_data.hop_count       = 0;
+        disp_data.packets_sent    = t + 1;
+        disp_data.uptime_seconds  = millis() / 1000;
+        disp_data.sensor_ok       = true;
+        disp_data.mesh_ok         = true;
+        disp_data.siren_active    = ev.siren_triggered;
+        disp_data.status_text     = ev.siren_triggered ? "CRITICAL" : (strcmp(ev.threshold_breached, "warning") == 0 ? "WARNING" : "NOMINAL");
+        subsense_display_update_health(&disp_data);
+#endif
+
         // Print telemetry line
         Serial.print("[T=");
         if (t < 10) Serial.print("0");
@@ -496,9 +522,12 @@ void print_menu() {
     Serial.println("  [5] Print Power Consumption & 4-Year Battery Lifespan Report");
     Serial.println("  [6] Toggle Hardware Siren/LED (GPIO 2)");
     Serial.println("  [7] Print Self-Health Telemetry JSON");
+#if !SUBSENSE_IS_GATEWAY
+    Serial.println("  [8] Update OLED Health Status Display (Sensor Node Exclusive)");
+#endif
     Serial.println("  [?] Print this Menu");
     print_separator();
-    Serial.print("Enter command [1-7]: ");
+    Serial.print("Enter command [1-8]: ");
 }
 
 void setup() {
@@ -593,6 +622,27 @@ void loop() {
                 Serial.println(g_health_buf);
                 break;
             }
+#if !SUBSENSE_IS_GATEWAY
+            case '8': {
+                SubSenseNodeDisplayData d;
+                d.node_id         = "SS-PANEL7-N042";
+                d.tilt_deg        = 1.45f;
+                d.vibration_rms   = 0.28f;
+                d.anomaly_score   = 0.14f;
+                d.battery_percent = 94;
+                d.rssi_dbm        = -66;
+                d.hop_count       = 0;
+                d.packets_sent    = 42;
+                d.uptime_seconds  = millis() / 1000;
+                d.sensor_ok       = true;
+                d.mesh_ok         = true;
+                d.siren_active    = false;
+                d.status_text     = "NOMINAL";
+                subsense_display_update_health(&d);
+                Serial.println("[DISPLAY] OLED Health Status refreshed on Sensor Node.");
+                break;
+            }
+#endif
             case '?':
             case 'h':
             case 'H':
