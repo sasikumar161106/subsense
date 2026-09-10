@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { WebSocket } from "ws";
 import { NodeTelemetryRecord } from "@subsense/shared";
 import { AlertEscalationEngine } from "../alert-engine/escalation-timer";
+import { AlertSystemClient } from "../alert-engine/alert-system-client";
 
 interface ConnectedClient {
   socket: WebSocket;
@@ -15,9 +16,14 @@ export class GatewayWebSocketServer {
   private static telemetryInterval: NodeJS.Timeout | null = null;
 
   static register(fastify: FastifyInstance) {
-    // Listen for alert engine events and broadcast immediately (≤1.5s NFR latency!)
+    // Listen for local alert engine events and broadcast immediately (≤1.5s NFR latency!)
     AlertEscalationEngine.subscribe(({ type, alert }) => {
       this.broadcastAlert(type, alert);
+    });
+
+    // Listen for remote Alert_System (:3000) alert events and forward to dashboard UI
+    AlertSystemClient.subscribeToAlertStream((eventType, alert) => {
+      this.broadcastAlert(eventType, alert);
     });
 
     fastify.get("/ws/live", { websocket: true }, (connection: any, req) => {

@@ -10,14 +10,30 @@ import { AlertEscalationEngine } from "../alert-engine/escalation-timer";
 import { AuditLedger } from "../alert-engine/audit-ledger";
 import { UserSession } from "../auth/service";
 import { NotificationDispatcher } from "../notifications/dispatcher";
+import { AlertSystemClient } from "../alert-engine/alert-system-client";
 
 export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
-  // Query active alerts in current tenant scope
+  // Query active alerts in current tenant scope (Proxies to Alert_System with local fallback)
   fastify.get<{
     Querystring: { site_id?: string; severity?: string; state?: string };
   }>("/api/v1/alerts", async (request, reply) => {
     const session = (request as any).userSession as UserSession;
     const isRegulator = session?.role === "dgms_regulator";
+
+    // 1. Attempt proxy fetch from Alert_System (:3000)
+    try {
+      const remoteAlerts = await AlertSystemClient.fetchAlerts({
+        zone_id: request.query.site_id,
+        severity: request.query.severity,
+        status: request.query.state,
+        tenant_id: isRegulator ? undefined : session?.tenantId || "OPCO-ECL-01",
+      });
+      if (remoteAlerts && remoteAlerts.length > 0) {
+        return { alerts: remoteAlerts };
+      }
+    } catch {
+      // Graceful fallback to local DB when Alert_System is offline or in unit tests
+    }
 
     return await withTenantScope(
       {
@@ -61,6 +77,7 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Acknowledge alert (audible dialog confirmation)
+  // Acknowledge alert (audible dialog confirmation)
   fastify.post<{
     Params: { alertId: string };
     Body: any;
@@ -76,6 +93,12 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
+      try {
+        await AlertSystemClient.acknowledgeAlert(alertId, userId, body?.comment);
+      } catch {
+        // Fallback to local
+      }
+
       const updated = await AlertEscalationEngine.acknowledgeAlert(
         alertId,
         userId,
@@ -116,6 +139,12 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
     const { reason, notes, feature_vector_snapshot } = parseResult.data;
 
     try {
+      try {
+        await AlertSystemClient.submitFeedback(alertId, userId, reason, notes);
+      } catch {
+        // Fallback to local
+      }
+
       const updated = await AlertEscalationEngine.flagFalseAlarm(
         alertId,
         userId,
@@ -130,6 +159,33 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
       };
     } catch (err: any) {
       return reply.status(400).send({ error: err.message });
+    }
+  });
+
+  // Retract alert (de-escalate / retraction notice via Alert_System)
+  fastify.post<{
+    Params: { alertId: string };
+    Body: any;
+  }>("/api/v1/alerts/:alertId/retract", async (request, reply) => {
+    const session = (request as any).userSession as UserSession;
+    const { alertId } = request.params;
+    const body = request.body as any;
+    const userId = session?.userId || body?.user_id || "USR-OP-8492";
+
+    if (session?.role === "dgms_regulator") {
+      return reply.status(403).send({ error: "Forbidden: DGMS Regulators cannot alter alert state" });
+    }
+
+    try {
+      const result = await AlertSystemClient.retractAlert(alertId, userId, body?.reason);
+      return { success: true, ...result };
+    } catch (err: any) {
+      try {
+        const updated = await AlertEscalationEngine.resolveAlert(alertId, userId);
+        return { success: true, alert: updated };
+      } catch (localErr: any) {
+        return reply.status(400).send({ error: err.message });
+      }
     }
   });
 
