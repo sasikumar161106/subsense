@@ -76,7 +76,7 @@ class LoRaRelayNode:
         for k in expired:
             del self.dedup_cache[k]
 
-    def handle_incoming_chunk(self, chunk: str, rssi: int):
+    def handle_incoming_chunk(self, chunk: str, rssi: Optional[int] = None):
         now = time.time()
         if now - self.rx_buffer_last_time > 4.0:
             self.rx_buffer = ""
@@ -107,7 +107,7 @@ class LoRaRelayNode:
                     self.rx_buffer = self.rx_buffer[-256:]
                 break
 
-    def process_packet(self, message: Union[str, dict], rssi: int) -> bool:
+    def process_packet(self, message: Union[str, dict], rssi: Optional[int] = None) -> bool:
         self.pings_received += 1
         now = time.time()
         self._clean_dedup_cache(now)
@@ -143,7 +143,8 @@ class LoRaRelayNode:
         fwd_data = dict(data)
         fwd_data["hop_count"] = hop_count + 1
         fwd_data["relayed_by"] = self.relay_id
-        fwd_data["relay_rssi"] = rssi
+        if rssi is not None:
+            fwd_data["relay_rssi"] = rssi
 
         fwd_payload = json.dumps(fwd_data, separators=(',', ':'))
 
@@ -153,8 +154,13 @@ class LoRaRelayNode:
             self.lora.send(fwd_payload, target_addr=0xFFFF, channel=15)
 
         self.packets_forwarded += 1
-        logger.info(
-            f"Forwarded: Node={node_id} (Seq #{seq}) | Hop {hop_count} -> {fwd_data['hop_count']} | RSSI: {rssi} dBm"
+        rssi_str = f"{rssi} dBm" if (rssi is not None and -130 <= rssi <= 0) else "N/A"
+        print(
+            f"\r\033[96m🔄 RELAY\033[0m [Fwd #{self.packets_forwarded}] "
+            f"Node: {node_id} (Seq #{seq}) | "
+            f"Hop: {hop_count} -> {fwd_data['hop_count']} | "
+            f"RSSI: {rssi_str} | ID: {self.relay_id}  ",
+            flush=True,
         )
         return True
 
