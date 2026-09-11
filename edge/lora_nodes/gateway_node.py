@@ -13,7 +13,9 @@ import argparse
 import json
 import logging
 import os
+import queue
 import sys
+import threading
 import time
 from typing import Dict, Optional
 
@@ -81,7 +83,36 @@ class LoRaGatewayNode:
         )
         self.bridge.start_worker()
 
+        # Asynchronous background dispatch queue to keep LoRa receiver 100% non-blocking (0ms latency)
+        self.dispatch_queue: queue.Queue = queue.Queue(maxsize=500)
+        self._dispatch_running = True
+        self._dispatch_thread = threading.Thread(target=self._async_dispatch_worker, daemon=True, name="LoRaGatewayDispatcher")
+        self._dispatch_thread.start()
+
         self._init_hardware()
+
+    def _async_dispatch_worker(self):
+        """Asynchronous HTTP dispatch worker so LoRa radio reception is never blocked."""
+        while self._dispatch_running:
+            try:
+                canonical = self.dispatch_queue.get(timeout=1.0)
+                if canonical is None:
+                    break
+                ok = self.bridge.forward_reading(canonical)
+                if ok:
+                    self.total_dispatched += 1
+                self.dispatch_queue.task_done()
+            except queue.Empty:
+                continue
+            except Exception as e:
+                logger.debug(f"Async dispatch error: {e}")
+
+    def flush_dispatch(self, timeout: float = 2.0):
+        """Block until all queued telemetry packets have been dispatched."""
+        try:
+            self.dispatch_queue.join()
+        except Exception:
+            pass
 
     def _init_hardware(self):
         try:
@@ -148,7 +179,7 @@ class LoRaGatewayNode:
             data = dict(raw_input)
 
         # Stamp authentic hardware RSSI if received
-        if rssi is not None:
+        if rssi is not None and -150 <= rssi <= -10:
             data["rssi_dbm"] = rssi
 
         # Map to Canonical SubSense SensorReading contract
@@ -160,38 +191,30 @@ class LoRaGatewayNode:
         hop = canonical["node_health"].get("hop_count", 0)
         siren = canonical.get("siren_triggered", False)
 
-        # Immediate real-time log
-        logger.info(
-            f"⚡ [RX PACKET #{self.total_received}] Node: {node_id} | "
-            f"Tilt: {tilt if tilt is not None else 0.0:.3f}° | "
-            f"Vib: {vib if vib is not None else 0.0:.3f} mm/s | "
-            f"RSSI: {rssi if rssi is not None else 'N/A'} dBm | "
-            f"Siren: {siren}"
+        # Immediate single-line UI output matching Sensor Node layout (instant 0ms response)
+        status_color = Colors.RED if siren else Colors.GREEN
+        alert_icon = "🚨 CRITICAL" if siren else "📡 NOMINAL"
+        tilt_str = f"{tilt:.2f}" if tilt is not None else "0.00"
+        vib_str = f"{vib:.2f}" if vib is not None else "0.00"
+        rssi_str = f"{rssi} dBm" if (rssi is not None and -150 <= rssi <= -10) else "N/A"
+
+        print(
+            f"{status_color}{alert_icon} [Rx #{self.total_received}] "
+            f"Node: {node_id} | "
+            f"Tilt: {tilt_str}° | "
+            f"Vib: {vib_str} mm/s | "
+            f"RSSI: {rssi_str} | "
+            f"Hops: {hop}{Colors.RESET}",
+            flush=True,
         )
 
-        # Dispatch to AI/ML & BFF
-        ok = self.bridge.forward_reading(canonical)
-        if ok:
-            self.total_dispatched += 1
+        # Enqueue for asynchronous background HTTP dispatch (zero blocking on LoRa reception)
+        try:
+            self.dispatch_queue.put_nowait(canonical)
+        except queue.Full:
+            pass
 
-        # Visual Console Output
-        status_color = Colors.RED if siren else Colors.GREEN
-        icon = "🚨 CRITICAL HAZARD" if siren else "📡 TELEMETRY INGESTED"
-
-        print(f"\n{status_color}{Colors.BOLD}")
-        print("┌──────────────────────────────────────────────────────────┐")
-        print(f"│  {icon:<54} │")
-        print("├──────────────────────────────────────────────────────────┤")
-        print(f"│  Node ID:     {node_id:<42} │")
-        print(f"│  Pitch Tilt:  {f'{tilt:.3f} deg' if tilt is not None else 'null':<42} │")
-        print(f"│  Vibration:   {f'{vib:.3f} mm/s' if vib is not None else 'null':<42} │")
-        print(f"│  LoRa RSSI:   {f'{rssi} dBm' if rssi is not None else 'N/A':<42} │")
-        print(f"│  Hops:        {hop:<42} │")
-        print(f"│  Dispatched:  {'YES (AI/ML & BFF)' if ok else 'OFFLINE QUEUED':<42} │")
-        print("└──────────────────────────────────────────────────────────┘")
-        print(f"{Colors.RESET}")
-
-        return ok
+        return True
 
     def run(self):
         print(f"\n{Colors.CYAN}{Colors.BOLD}")

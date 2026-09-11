@@ -136,6 +136,7 @@ class TestLoraStandaloneNodes(unittest.TestCase):
         # Process incoming LoRa packet with authentic hardware RSSI
         gw.process_incoming_packet(incoming_lora_pkt, rssi=-64)
         self.assertEqual(gw.total_received, 1)
+        gw.flush_dispatch()
 
         # Check that packet was safely buffered to SQLite offline queue
         queue_size = gw.bridge.queue.size()
