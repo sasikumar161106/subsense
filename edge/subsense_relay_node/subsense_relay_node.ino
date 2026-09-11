@@ -15,6 +15,7 @@
  */
 
 #include <Arduino.h>
+#include <WiFi.h>
 #include "subsense_wifi_mesh.h"
 
 void setup() {

@@ -41,6 +41,7 @@ typedef struct {
 static SubSenseMeshDedupEntry s_dedup_cache[SUBSENSE_MESH_DEDUP_CACHE_SIZE];
 static int s_dedup_next_slot = 0;
 static const uint8_t BROADCAST_ADDR[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+static volatile uint32_t s_led_off_ms = 0;
 
 static void handle_forward(const uint8_t* data, int data_len) {
     if (data_len < SUBSENSE_MESH_FRAG_HEADER_LEN) return;
@@ -78,17 +79,15 @@ static void handle_forward(const uint8_t* data, int data_len) {
     size_t wire_len = SUBSENSE_MESH_FRAG_HEADER_LEN + pkt->chunk_len;
     esp_now_send(BROADCAST_ADDR, reinterpret_cast<uint8_t*>(&fwd), wire_len);
 
-    // Blink status LED on forward
+    // Blink status LED asynchronously on forward (non-blocking)
     digitalWrite(PIN_STATUS_LED, HIGH);
+    s_led_off_ms = millis() + 20;
 
     Serial.printf("[RELAY FWD] Forwarded Msg ID %u (chunk %u/%u) from Origin %02X:%02X:%02X:%02X:%02X:%02X | Hop %u -> %u\n",
                   pkt->msg_id, pkt->chunk_index + 1, pkt->total_chunks,
                   pkt->origin_mac[0], pkt->origin_mac[1], pkt->origin_mac[2],
                   pkt->origin_mac[3], pkt->origin_mac[4], pkt->origin_mac[5],
                   pkt->hop_count, fwd.hop_count);
-
-    delay(20);
-    digitalWrite(PIN_STATUS_LED, LOW);
 }
 
 // Receive callback supporting both Arduino ESP32 Core v2.x and v3.x
@@ -156,6 +155,11 @@ void setup() {
 }
 
 void loop() {
+    if (s_led_off_ms > 0 && millis() >= s_led_off_ms) {
+        digitalWrite(PIN_STATUS_LED, LOW);
+        s_led_off_ms = 0;
+    }
+
     // Age out stale dedup entries every loop
     uint32_t now = millis();
     for (int i = 0; i < SUBSENSE_MESH_DEDUP_CACHE_SIZE; i++) {
@@ -163,5 +167,5 @@ void loop() {
             s_dedup_cache[i].in_use = false;
         }
     }
-    delay(100);
+    delay(10);
 }

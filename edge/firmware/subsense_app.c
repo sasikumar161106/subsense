@@ -13,9 +13,17 @@
 #include "subsense_ota_manager.h"
 #include "subsense_power_mgmt.h"
 #include "subsense_wifi_mesh.h"  
+
+#if defined(ESP_PLATFORM) || defined(ARDUINO_ARCH_ESP32)
+#include "esp_attr.h"
+static RTC_DATA_ATTR SubSenseWindowBuffer     s_window_buf;
+static RTC_DATA_ATTR SubSenseHealthTelemetry  s_health;
+#else
 // Statically allocated system components
 static SubSenseWindowBuffer     s_window_buf;
 static SubSenseHealthTelemetry  s_health;
+#endif
+
 static SubSenseOTAManager       s_ota;
 static SubSenseFeatureConfig    s_feat_config;
 static SubSenseInferenceConfig  s_inf_config;
@@ -26,8 +34,10 @@ static char s_json_event_buffer[SUBSENSE_JSON_EVENT_MAX_LEN];
 static char s_json_health_buffer[256];
 
 void subsense_system_init(void) {
-    // 1. Initialize ring buffer
-    subsense_buffer_init(&s_window_buf);
+    // 1. Initialize ring buffer if uninitialized
+    if (s_window_buf.count > SUBSENSE_WINDOW_SIZE) {
+        subsense_buffer_init(&s_window_buf);
+    }
 
     // 2. Initialize OTA manager
     subsense_ota_init(&s_ota, "gw-autoencoder-v1.3.0");
@@ -110,7 +120,7 @@ void subsense_step(
     bool raw_hazard = subsense_fallback_evaluate(
         raw_features[0],
         raw_features[1],
-        raw_features[4],
+        raw_features[3],
         raw_features[5],
         raw_features[6],
         fallback_reason,

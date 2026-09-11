@@ -185,7 +185,7 @@ static void read_mpu6050(float* out_tilt, float* out_vib) {
         }
         *out_tilt = angle_deg;
 
-        // Dynamic vibration deviation with sensor noise deadband filter
+        // Dynamic vibration deviation with sensor noise deadband filter (1g ≈ 98.0665 mm/s pseudo-velocity amplitude)
         float diff = fabsf(cur_mag - 1.0f);
         if (diff < 0.025f) diff = 0.0f;
         *out_vib = diff * 98.0665f; // in mm/s
@@ -241,29 +241,40 @@ void setup() {
     g_node_config.model_version = "node-detector-v1.3.0";
     g_node_config.source_tier = "node";
 
-    g_feat_config.scaler_mean[0] = 0.010298f;  g_feat_config.scaler_scale[0] = 0.077703f;
-    g_feat_config.scaler_mean[1] = 0.000011f;  g_feat_config.scaler_scale[1] = 0.001341f;
-    g_feat_config.scaler_mean[2] = 0.000893f;  g_feat_config.scaler_scale[2] = 0.000220f;
-    g_feat_config.scaler_mean[3] = 0.043559f;  g_feat_config.scaler_scale[3] = 0.023900f;
-    g_feat_config.scaler_mean[4] = 0.332180f;  g_feat_config.scaler_scale[4] = 2.029822f;
-    g_feat_config.scaler_mean[5] = -0.000056f; g_feat_config.scaler_scale[5] = 0.020145f;
-    g_feat_config.scaler_mean[6] = 0.0f;       g_feat_config.scaler_scale[6] = 1.0f;
-    g_feat_config.scaler_mean[7] = 0.0f;       g_feat_config.scaler_scale[7] = 1.0f;
+    // Physical engineering range normalization for on-device TinyML:
+    // [0] tilt_current: scale 2.0 deg (0-1.5 deg is nominal baseline, >=4 deg critical)
+    // [1] tilt_rate:    scale 0.5 deg/s
+    // [2] tilt_var:     scale 0.5
+    // [3] vib_rms:      scale 3.0 mm/s (0-2 mm/s nominal, >=6 mm/s critical)
+    // [4] vib_peaks:    scale 10.0
+    // [5] disp_delta:   scale 1.0 mm (zero-filled on sensor node)
+    // [6] crack_state:  scale 1.0 (zero-filled on sensor node)
+    // [7] crack_count:  scale 1.0 (zero-filled on sensor node)
+    for (int i = 0; i < SUBSENSE_NUM_FEATURES; i++) {
+        g_feat_config.scaler_mean[i] = 0.0f;
+    }
+    g_feat_config.scaler_scale[0] = 2.0f;
+    g_feat_config.scaler_scale[1] = 0.5f;
+    g_feat_config.scaler_scale[2] = 0.5f;
+    g_feat_config.scaler_scale[3] = 3.0f;
+    g_feat_config.scaler_scale[4] = 10.0f;
+    g_feat_config.scaler_scale[5] = 1.0f;
+    g_feat_config.scaler_scale[6] = 1.0f;
+    g_feat_config.scaler_scale[7] = 1.0f;
     g_feat_config.quant_input_scale = 0.029008f;
     g_feat_config.quant_input_zp = 0;
 
     subsense_inference_init(&g_node_config, &g_health);
 
-    // 5. Initialize WiFi Mesh in NODE role
+    // 7. Initialize SubSense WiFi Mesh (Role: NODE, transmits directly to Relays/Gateway)
     bool mesh_ok = subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
     if (mesh_ok) {
-        Serial.print("[MESH] Node initialized. My MAC: ");
-        Serial.println(WiFi.macAddress());
+        Serial.println("[WIFI MESH] SubSense ESP-NOW Mesh Transport Initialized (Role: NODE)");
     } else {
-        Serial.println("[MESH] ERROR: WiFi mesh init failed.");
+        Serial.println("[WIFI MESH] ERROR: Failed to initialize WiFi Mesh!");
     }
 
-    Serial.println("[SYSTEM] Setup completed. Entering sensing, TinyML & health display loop.");
+    Serial.println(">> SubSense Sensor Node Ready. Beginning active geotechnical monitoring loop...");
 }
 
 // ==============================================================================
@@ -280,6 +291,10 @@ void loop() {
 
     // Strict Ground Rule Compliance: displacement and crack are ALWAYS 0.0 / null
     subsense_buffer_push(&g_win_buf, tilt, vib, 0.0f, 0.0f);
+    if (!subsense_buffer_is_full(&g_win_buf)) {
+        delay(100);
+        return;
+    }
 
     // 3. Feature Extraction
     float raw_features[SUBSENSE_NUM_FEATURES];
@@ -291,10 +306,7 @@ void loop() {
     // 4. On-Device TinyML Inference
     SubSenseDetectionEvent event;
     char ts_str[32];
-    snprintf(ts_str, sizeof(ts_str), "2026-09-10T%02u:%02u:%02uZ",
-             (unsigned)(millis() / 3600000) % 24,
-             (unsigned)(millis() / 60000) % 60,
-             (unsigned)(millis() / 1000) % 60);
+    snprintf(ts_str, sizeof(ts_str), "NODE-UPTIME-%lu", millis() / 1000);
 
     bool ml_breach = subsense_run_inference(
         in_features_int8,
@@ -305,10 +317,10 @@ void loop() {
         &g_health
     );
 
-    // 5. Fail-Safe Physical Priority Check (Tilt >= 4.0 deg threshold)
-    // Siren fires if and only if physical ground tilt breaches 4.0 degrees
-    bool is_critical = (tilt >= 4.0f);
-    float reported_anomaly = is_critical ? 0.95f : (tilt > 2.0f ? 0.45f : 0.05f);
+    // 5. Fail-Safe Physical Priority & Multi-Factor TinyML Alert Decision
+    // Fail-safe physical trip: immediate hardware trigger if tilt >= 4.0 deg OR TinyML critical breach
+    bool is_critical = (tilt >= 4.0f) || (event.anomaly_score >= 0.75f);
+    bool is_warning  = (tilt >= 2.0f) || (event.anomaly_score >= 0.35f);
 
     if (is_critical) {
         g_siren_active = true;
@@ -325,7 +337,7 @@ void loop() {
     disp_data.node_id         = NODE_ID;
     disp_data.tilt_deg        = tilt;
     disp_data.vibration_rms   = vib;
-    disp_data.anomaly_score   = reported_anomaly;
+    disp_data.anomaly_score   = event.anomaly_score;
     disp_data.battery_percent = 94; // LiFePO4 battery charge state
     disp_data.rssi_dbm        = -68;
     disp_data.hop_count       = 0;
@@ -334,7 +346,7 @@ void loop() {
     disp_data.sensor_ok       = g_mpu6050_ok;
     disp_data.mesh_ok         = true;
     disp_data.siren_active    = g_siren_active;
-    disp_data.status_text     = is_critical ? "CRITICAL" : (tilt > 2.0f ? "WARNING" : "NOMINAL");
+    disp_data.status_text     = is_critical ? "CRITICAL" : (is_warning ? "WARNING" : "NOMINAL");
 
     subsense_display_update_health(&disp_data);
 
@@ -348,7 +360,7 @@ void loop() {
         "\"siren_triggered\":%s,\"timestamp\":\"%s\"}",
         NODE_ID, SITE_ID, TENANT_ID,
         tilt, vib, disp_data.battery_percent, disp_data.rssi_dbm,
-        reported_anomaly, g_siren_active ? "true" : "false", ts_str
+        event.anomaly_score, g_siren_active ? "true" : "false", ts_str
     );
 
     bool tx_ok = subsense_wifi_mesh_send(tx_payload, strlen(tx_payload));

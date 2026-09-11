@@ -13,6 +13,7 @@
 // Hardware Pin Configuration
 // Most ESP32 DevKit boards have an onboard blue LED on GPIO 2.
 #define PIN_STATUS_LED   2
+static volatile uint32_t s_led_off_ms = 0;
 
 /**
  * @brief Callback invoked whenever a full JSON event/health message
@@ -23,6 +24,7 @@
 static void on_mesh_data_received(const char* json_payload, size_t len, const uint8_t sender_mac[6]) {
     // Flash status LED on reception
     digitalWrite(PIN_STATUS_LED, HIGH);
+    s_led_off_ms = millis() + 30;
 
     Serial.println();
     Serial.println("================================================================================");
@@ -40,9 +42,6 @@ static void on_mesh_data_received(const char* json_payload, size_t len, const ui
      * 2. Push to local Time-Series Database (InfluxDB / TimescaleDB / SQLite)
      * 3. Send SMS / WebSocket alert to Shift Supervisor Dashboard if "siren_triggered": true
      */
-
-    delay(30);
-    digitalWrite(PIN_STATUS_LED, LOW);
 }
 
 void setup() {
@@ -82,6 +81,11 @@ void setup() {
 }
 
 void loop() {
+    if (s_led_off_ms > 0 && millis() >= s_led_off_ms) {
+        digitalWrite(PIN_STATUS_LED, LOW);
+        s_led_off_ms = 0;
+    }
+
     // Crucial: Keep WiFi mesh housekeeper running every iteration.
     // This ages out partial reassembly slots and drops stale incomplete fragments.
     subsense_wifi_mesh_loop();
