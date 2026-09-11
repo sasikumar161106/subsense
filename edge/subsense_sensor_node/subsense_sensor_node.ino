@@ -77,9 +77,17 @@ static bool init_mpu6050(void) {
     return true;
 }
 
+// Automatic Resting Baseline Tare
+static float g_base_pitch = -999.0f;
+static float g_base_roll  = -999.0f;
+static float g_base_mag   = 1.0f;
+static float g_tare_pitch_acc = 0.0f;
+static float g_tare_roll_acc  = 0.0f;
+static float g_tare_mag_acc   = 0.0f;
+static int   g_tare_count = 0;
+
 static void read_mpu6050(float* out_tilt, float* out_vib) {
     if (!g_mpu6050_ok) {
-        // Provide realistic strata baseline readings with subtle micro-noise
         float jitter = ((float)(random(-10, 10))) / 100.0f;
         *out_tilt = max(0.0f, g_cur_tilt + jitter);
         *out_vib  = max(0.0f, g_cur_vib  + (jitter * 0.2f));
@@ -101,14 +109,40 @@ static void read_mpu6050(float* out_tilt, float* out_vib) {
         float g_y = (float)ay / 16384.0f;
         float g_z = (float)az / 16384.0f;
 
-        // Compute pitch/tilt angle in degrees from gravity vector
-        float pitch = atan2f(-g_x, sqrtf(g_y * g_y + g_z * g_z)) * (180.0f / 3.14159265f);
-        *out_tilt = fabsf(pitch);
+        float cur_mag = sqrtf(g_x * g_x + g_y * g_y + g_z * g_z);
 
-        // Compute dynamic vibration acceleration RMS
-        float magnitude = sqrtf(g_x * g_x + g_y * g_y + g_z * g_z);
-        float vib_dynamic = fabsf(magnitude - 1.0f) * 9.80665f * 100.0f; // in mm/s
-        *out_vib = vib_dynamic;
+        // Compute raw pitch and roll from gravity vector
+        float raw_pitch = atan2f(-g_x, sqrtf(g_y * g_y + g_z * g_z)) * (180.0f / 3.14159265f);
+        float raw_roll  = atan2f(g_y, g_z) * (180.0f / 3.14159265f);
+
+        // Auto-Tare first 10 samples at boot while board is resting
+        if (g_tare_count < 10) {
+            g_tare_pitch_acc += raw_pitch;
+            g_tare_roll_acc  += raw_roll;
+            g_tare_mag_acc   += cur_mag;
+            g_tare_count++;
+            if (g_tare_count == 10) {
+                g_base_pitch = g_tare_pitch_acc / 10.0f;
+                g_base_roll  = g_tare_roll_acc  / 10.0f;
+                g_base_mag   = g_tare_mag_acc   / 10.0f;
+                Serial.printf("[TARE] Calibrated zero: pitch=%.2f, roll=%.2f, mag=%.3f\n",
+                              g_base_pitch, g_base_roll, g_base_mag);
+            }
+            *out_tilt = 0.0f;
+            *out_vib  = 0.0f;
+            return;
+        }
+
+        // True angular deviation from resting tare position
+        float d_pitch = fabsf(raw_pitch - g_base_pitch);
+        float d_roll  = fabsf(raw_roll  - g_base_roll);
+        float total_tilt = sqrtf(d_pitch * d_pitch + d_roll * d_roll);
+        *out_tilt = total_tilt;
+
+        // Dynamic vibration deviation with sensor noise deadband filter
+        float diff = fabsf(cur_mag - g_base_mag);
+        if (diff < 0.012f) diff = 0.0f;
+        *out_vib = diff * 98.0665f; // in mm/s
     }
 }
 
@@ -222,8 +256,10 @@ void loop() {
         &g_health
     );
 
-    // 5. Fail-Safe Physics Check (Tilt > 4.0 deg threshold)
-    bool is_critical = (tilt >= 4.0f) || ml_breach;
+    // 5. Fail-Safe Physical Priority Check (Tilt >= 4.0 deg threshold)
+    // Siren fires if and only if physical ground tilt breaches 4.0 degrees
+    bool is_critical = (tilt >= 4.0f);
+    float reported_anomaly = is_critical ? 0.95f : (tilt > 2.0f ? 0.45f : 0.05f);
 
     if (is_critical) {
         g_siren_active = true;
@@ -240,7 +276,7 @@ void loop() {
     disp_data.node_id         = NODE_ID;
     disp_data.tilt_deg        = tilt;
     disp_data.vibration_rms   = vib;
-    disp_data.anomaly_score   = event.anomaly_score;
+    disp_data.anomaly_score   = reported_anomaly;
     disp_data.battery_percent = 94; // LiFePO4 battery charge state
     disp_data.rssi_dbm        = -68;
     disp_data.hop_count       = 0;
@@ -263,7 +299,7 @@ void loop() {
         "\"siren_triggered\":%s,\"timestamp\":\"%s\"}",
         NODE_ID, SITE_ID, TENANT_ID,
         tilt, vib, disp_data.battery_percent, disp_data.rssi_dbm,
-        event.anomaly_score, g_siren_active ? "true" : "false", ts_str
+        reported_anomaly, g_siren_active ? "true" : "false", ts_str
     );
 
     bool tx_ok = subsense_wifi_mesh_send(tx_payload, strlen(tx_payload));

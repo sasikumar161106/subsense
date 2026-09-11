@@ -180,7 +180,12 @@ static void on_esp_now_recv(const esp_now_recv_info_t* info, const uint8_t* data
 
         size_t wire_len = SUBSENSE_MESH_FRAG_HEADER_LEN + pkt->chunk_len;
         esp_now_send(SUBSENSE_BROADCAST_MAC, reinterpret_cast<uint8_t*>(&fwd), wire_len);
-        return; // relay does not reassemble or call an application callback
+        Serial.printf("[RELAY FWD] Forwarded Msg ID %u (chunk %u/%u) from Origin %02X:%02X:%02X:%02X:%02X:%02X | Hop %u -> %u\n",
+                      pkt->msg_id, pkt->chunk_index + 1, pkt->total_chunks,
+                      pkt->origin_mac[0], pkt->origin_mac[1], pkt->origin_mac[2],
+                      pkt->origin_mac[3], pkt->origin_mac[4], pkt->origin_mac[5],
+                      pkt->hop_count, fwd.hop_count);
+        return;
     }
 
     if (s_role != SUBSENSE_MESH_ROLE_GATEWAY) return; // NODE role ignores incoming data

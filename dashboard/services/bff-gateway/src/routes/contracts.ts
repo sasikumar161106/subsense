@@ -5,7 +5,7 @@ import {
   DgmsReportRequestPayloadSchema,
 } from "@subsense/shared";
 
-import { GatewayWebSocketManager } from "../ws/gateway-ws";
+import { GatewayWebSocketServer } from "../ws/gateway-ws";
 
 export const contractsRoutes: FastifyPluginAsync = async (fastify) => {
   // 14.1 Telemetry Contract Validator & Mock
@@ -120,7 +120,7 @@ export const contractsRoutes: FastifyPluginAsync = async (fastify) => {
   // Real Physical Telemetry Ingestion Broadcast
   fastify.post("/api/v1/telemetry/broadcast", async (request, reply) => {
     const record = request.body as any;
-    GatewayWebSocketManager.broadcastTelemetry(record);
+    GatewayWebSocketServer.broadcastTelemetry(record);
     return { status: "BROADCASTED", node_id: record?.node_id };
   });
 };

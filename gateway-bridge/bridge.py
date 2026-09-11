@@ -38,6 +38,7 @@ logger = logging.getLogger("gateway-bridge")
 DEFAULT_PORT = "COM5"
 DEFAULT_BAUD = 115200
 DEFAULT_INGEST_URL = "http://localhost:8000/api/v1/ingest/telemetry"
+DEFAULT_BFF_URL = "http://localhost:3001/api/v1/telemetry/broadcast"
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "offline_queue.db")
 DEFAULT_RETRY_INTERVAL_SEC = 5.0
 
@@ -47,20 +48,18 @@ DEFAULT_RETRY_INTERVAL_SEC = 5.0
 # ==============================================================================
 
 def format_timestamp(raw_ts: Any) -> str:
-    """Ensure timestamp is formatted as an ISO 8601 UTC string."""
+    """Ensure timestamp is valid current ISO 8601 UTC string within ingestion window."""
+    now_dt = datetime.now(timezone.utc)
     if isinstance(raw_ts, str) and len(raw_ts) >= 19 and ("T" in raw_ts or "-" in raw_ts):
-        if not raw_ts.endswith("Z") and not ("+" in raw_ts[-6:] or "-" in raw_ts[-6:]):
-            return raw_ts + "Z"
-        return raw_ts
-    if isinstance(raw_ts, (int, float)):
-        # Epoch seconds or milliseconds
-        if raw_ts > 1e11:
-            raw_ts /= 1000.0
         try:
-            return datetime.fromtimestamp(raw_ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            clean_ts = raw_ts.replace("Z", "+00:00")
+            parsed = datetime.fromisoformat(clean_ts)
+            # If timestamp is within 60s of current time, keep it; otherwise stamp gateway arrival time
+            if abs((now_dt - parsed).total_seconds()) < 60:
+                return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
         except Exception:
             pass
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -72,9 +71,9 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     - displacement and crack are ALWAYS None with availability False.
     """
     # Extract node and tenant/site identifiers
-    node_id = raw.get("node_id") or raw.get("node") or "SS-NODE-01"
+    node_id = raw.get("node_id") or raw.get("node") or "SS-PANEL7-N042"
     site_id = raw.get("site_id") or "PANEL7-JHARIA"
-    tenant_id = raw.get("tenant_id") or "tenant-jharia-01"
+    tenant_id = raw.get("tenant_id") or "OPCO-ECL-01"
     zone_id = raw.get("zone_id") or "PANEL-1-ZONE-01"
 
     # Extract timestamp from various possible firmware keys
@@ -165,6 +164,8 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
             "displacement": False,
             "crack": False,
         },
+        "anomaly_score": float(raw.get("anomaly_score", 0.05 if (tilt_val or 0.0) < 4.0 else 0.95)),
+        "siren_triggered": bool(raw.get("siren_triggered", False)),
         "node_health": {
             "battery_percent": battery_pct,
             "rssi_dbm": rssi_dbm,
@@ -332,12 +333,14 @@ class GatewayBridge:
         port: str = DEFAULT_PORT,
         baud: int = DEFAULT_BAUD,
         ingest_url: str = DEFAULT_INGEST_URL,
+        bff_url: str = DEFAULT_BFF_URL,
         db_path: str = DEFAULT_DB_PATH,
         retry_interval: float = DEFAULT_RETRY_INTERVAL_SEC,
     ):
         self.port = port
         self.baud = baud
         self.ingest_url = ingest_url
+        self.bff_url = bff_url
         self.queue = OfflineQueue(db_path)
         self.retry_interval = retry_interval
         self.extractor = SerialJSONExtractor()
@@ -358,7 +361,30 @@ class GatewayBridge:
         logger.info("Gateway bridge stopped.")
 
     def forward_reading(self, payload: Dict[str, Any]) -> bool:
-        """Attempt to POST canonical reading to AI/ML ingestion service."""
+        """Attempt to POST canonical reading to AI/ML ingestion service and BFF Gateway."""
+        # 1. Forward to BFF Gateway for instant WebSocket UI broadcast
+        try:
+            bff_payload = {
+                "tenant_id": "OPCO-ECL-01",
+                "site_id": payload.get("site_id", "PANEL7-JHARIA"),
+                "node_id": payload.get("node_id", "SS-PANEL7-N042"),
+                "as_of": payload.get("timestamp"),
+                "readings": payload.get("readings", {}),
+                "anomaly_score": payload.get("anomaly_score", 0.08),
+                "siren_triggered": payload.get("siren_triggered", False),
+                "health": {
+                    "battery_pct": payload.get("node_health", {}).get("battery_percent", 85),
+                    "rssi_dbm": payload.get("node_health", {}).get("rssi_dbm", -70),
+                    "hop_count": payload.get("node_health", {}).get("hop_count", 1),
+                }
+            }
+            r_bff = requests.post(self.bff_url, json=bff_payload, timeout=1.5)
+            if r_bff.status_code == 200:
+                logger.info(f"[FORWARDED -> DASHBOARD WS] Node: {payload['node_id']} | Tilt: {payload['readings']['tilt_deg']}° | Vib: {payload['readings']['vibration_rms_mm_s']} mm/s")
+        except Exception as e:
+            logger.debug(f"[BFF BROADCAST ERR] {e}")
+
+        # 2. Forward to AI/ML Ingestion service
         try:
             resp = requests.post(self.ingest_url, json=payload, timeout=3.0)
             if resp.status_code in (200, 201, 202):
@@ -422,22 +448,52 @@ class GatewayBridge:
             time.sleep(self.retry_interval)
 
     def run_serial_loop(self) -> None:
-        """Connect to hardware serial port and stream data."""
+        """Connect to hardware serial port and stream data with auto-reconnect."""
         import serial
-        logger.info(f"Opening Gateway Serial Port '{self.port}' at {self.baud} baud...")
-        try:
-            ser = serial.Serial(self.port, self.baud, timeout=1.0)
-            logger.info(f"Serial port {self.port} successfully connected. Listening for Gateway packets...")
-            self.start_worker()
-            while self._running:
-                raw_bytes = ser.readline()
-                if not raw_bytes:
-                    continue
-                line = raw_bytes.decode(errors="ignore")
-                self.process_serial_line(line)
-        except serial.SerialException as e:
-            logger.error(f"Failed to connect to serial port {self.port}: {e}")
-            raise
+        self.start_worker()
+
+        while self._running:
+            try:
+                ser = serial.Serial()
+                ser.port = self.port
+                ser.baudrate = self.baud
+                ser.timeout = 1.0
+                ser.dtr = False
+                ser.rts = False
+                ser.open()
+                ser.dtr = False
+                ser.rts = False
+                time.sleep(0.1)
+                ser.reset_input_buffer()
+
+                logger.info(f"Serial port {self.port} successfully connected. Listening for Gateway packets...")
+
+                while self._running:
+                    try:
+                        raw_bytes = ser.readline()
+                    except serial.SerialException as e:
+                        logger.warning(f"Serial connection interrupted ({e}). Reconnecting in 2s...")
+                        break
+
+                    if not raw_bytes:
+                        continue
+                    line = raw_bytes.decode(errors="ignore")
+                    clean = line.strip()
+                    if clean:
+                        logger.info(f"[SERIAL] {clean}")
+                    self.process_serial_line(line)
+
+                try:
+                    ser.close()
+                except Exception:
+                    pass
+
+            except serial.SerialException as e:
+                logger.warning(f"Port {self.port} unavailable ({e}). Check cable & ensure Arduino Serial Monitor is closed! Retrying in 2s...")
+                time.sleep(2.0)
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}. Retrying in 2s...")
+                time.sleep(2.0)
 
 
 # ==============================================================================

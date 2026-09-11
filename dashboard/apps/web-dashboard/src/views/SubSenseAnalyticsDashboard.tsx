@@ -44,12 +44,13 @@ import {
   Terminal,
 } from "lucide-react";
 import { wsService, playAudibleAlertChime, startContinuousSiren, stopContinuousSiren } from "../services/socket";
-import { JudgeDemoConsole } from "../components/JudgeDemoConsole";
 import { OledDisplayMirror } from "../components/OledDisplayMirror";
 import { useAuth } from "../contexts/AuthContext";
 import { useTenant } from "../contexts/TenantContext";
 import { fetchApi } from "../services/api";
 import { UserRole, NodeTelemetryRecord, AlertLifecycleEvent } from "@subsense/shared";
+import { SubSenseLogo } from "../components/SubSenseLogo";
+import { JudgeDemoConsole } from "../components/JudgeDemoConsole";
 
 // ============================================================================
 // 4 OPERATOR ROLES DEFINITIONS
@@ -136,17 +137,17 @@ const INITIAL_NODES: Record<string, {
     nodeId: "SS-PANEL7-N042",
     shortId: "N042",
     zone: "Panel 7 / Zone C (Pit Floor)",
-    disp: 3.70,
-    tilt: 0.183,
-    vib: 1.42,
-    crack: 0.62,
-    anomaly: 0.86,
-    status: "Critical",
-    health: "Poor",
-    batt: 78,
-    rssi: -71,
-    hops: 3,
-    type: "Extensometer + Multi-axis Tilt",
+    disp: 0.12,
+    tilt: 0.05,
+    vib: 0.15,
+    crack: 0.01,
+    anomaly: 0.08,
+    status: "Healthy",
+    health: "Good",
+    batt: 94,
+    rssi: -68,
+    hops: 1,
+    type: "SubSense Smart Sensor Node (MPU6050)",
     lastSeen: "Just now",
   },
   "SS-PANEL7-N043": {
@@ -334,6 +335,24 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
   const [isSubmittingAck, setIsSubmittingAck] = useState<boolean>(false);
   const [systemBanner, setSystemBanner] = useState<string | null>(null);
 
+  // False Alarm Modal State
+  const [falseAlarmModalAlert, setFalseAlarmModalAlert] = useState<AlertLifecycleEvent | null>(null);
+  const [falseAlarmReason, setFalseAlarmReason] = useState<string>("Heavy blasting vibration artifact");
+  const [falseAlarmNotes, setFalseAlarmNotes] = useState<string>("");
+
+  // Sensor Filter & Analytics Toggles
+  const [sensorStatusFilter, setSensorStatusFilter] = useState<"All" | "Healthy" | "At Risk" | "Critical" | "Offline">("All");
+  const [bilstmConesActive, setBilstmConesActive] = useState<boolean>(true);
+  const [blastCorrelationActive, setBlastCorrelationActive] = useState<boolean>(false);
+
+  // Settings & Provisioning Form State
+  const [extensometerThreshold, setExtensometerThreshold] = useState<number>(3.0);
+  const [vibrationThreshold, setVibrationThreshold] = useState<number>(1.2);
+  const [newSensorId, setNewSensorId] = useState<string>("SS-PANEL7-N050");
+  const [newSensorType, setNewSensorType] = useState<string>("Extensometer + IMU");
+  const [newSensorZone, setNewSensorZone] = useState<string>("Panel 7 / Zone B (Mid Bench)");
+  const [isProvisioning, setIsProvisioning] = useState<boolean>(false);
+
   // Global Search Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -348,144 +367,6 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
   const [showOledMirror, setShowOledMirror] = useState<boolean>(true);
   const [isStreamingActive, setIsStreamingActive] = useState<boolean>(true);
 
-  // Automatic Real-Time Telemetry Simulation Loop (1.2s tick)
-  useEffect(() => {
-    if (!isStreamingActive) return;
-    const interval = setInterval(() => {
-      setSecondsAgo(0);
-      setTotalPacketsReceived((prev) => prev + 1);
-
-      if (demoScenario === "normal") {
-        const jitter = (Math.random() - 0.5) * 0.04;
-        const newTilt = Math.max(0.7, Math.min(1.05, demoTilt + jitter));
-        const newVib = Math.max(0.08, Math.min(0.22, demoVib + jitter * 0.5));
-        setDemoTilt(newTilt);
-        setDemoVib(newVib);
-
-        setSensors((prev) => {
-          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
-          if (!n042) return prev;
-          return {
-            ...prev,
-            "SS-PANEL7-N042": {
-              ...n042,
-              tilt: parseFloat(newTilt.toFixed(2)),
-              vib: parseFloat(newVib.toFixed(2)),
-              anomaly: 0.08,
-              status: "Healthy",
-              health: "Good",
-            },
-          };
-        });
-      } else if (demoScenario === "warning") {
-        const jitter = (Math.random() - 0.5) * 0.1;
-        const newTilt = Math.max(2.1, Math.min(2.7, demoTilt + jitter));
-        const newVib = Math.max(0.45, Math.min(0.75, demoVib + jitter * 0.5));
-        setDemoTilt(newTilt);
-        setDemoVib(newVib);
-
-        setSensors((prev) => {
-          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
-          if (!n042) return prev;
-          return {
-            ...prev,
-            "SS-PANEL7-N042": {
-              ...n042,
-              tilt: parseFloat(newTilt.toFixed(2)),
-              vib: parseFloat(newVib.toFixed(2)),
-              anomaly: 0.52,
-              status: "At Risk",
-              health: "Fair",
-            },
-          };
-        });
-      } else if (demoScenario === "critical") {
-        const jitter = (Math.random() - 0.5) * 0.15;
-        const newTilt = Math.max(4.6, Math.min(5.2, demoTilt + jitter));
-        const newVib = Math.max(1.2, Math.min(1.8, demoVib + jitter * 0.5));
-        setDemoTilt(newTilt);
-        setDemoVib(newVib);
-
-        setSensors((prev) => {
-          const n042 = prev["SS-PANEL7-N042"] || INITIAL_NODES["SS-PANEL7-N042"];
-          if (!n042) return prev;
-          return {
-            ...prev,
-            "SS-PANEL7-N042": {
-              ...n042,
-              tilt: parseFloat(newTilt.toFixed(2)),
-              vib: parseFloat(newVib.toFixed(2)),
-              anomaly: 0.96,
-              status: "Critical",
-              health: "Poor",
-            },
-          };
-        });
-      }
-    }, 1200);
-
-    return () => clearInterval(interval);
-  }, [isStreamingActive, demoScenario, demoTilt, demoVib]);
-
-  const handleTriggerScenario = (scenario: "normal" | "warning" | "critical" | "mesh_drop") => {
-    setDemoScenario(scenario);
-
-    if (scenario === "normal") {
-      stopContinuousSiren();
-      setIsSirenActive(false);
-      setDemoTilt(0.85);
-      setDemoVib(0.14);
-      setDemoAnomaly(0.08);
-      setSystemBanner("Mine Environment Stabilized • Status: Nominal");
-      setTimeout(() => setSystemBanner(null), 3000);
-    } else if (scenario === "warning") {
-      stopContinuousSiren();
-      setIsSirenActive(false);
-      setDemoTilt(2.35);
-      setDemoVib(0.58);
-      setDemoAnomaly(0.52);
-      playAudibleAlertChime("warning");
-      setSystemBanner("Advisory: Strata Micro-Fracture Creep in Panel 7 (Tilt: 2.35°)");
-      setTimeout(() => setSystemBanner(null), 4000);
-    } else if (scenario === "critical") {
-      setDemoTilt(4.85);
-      setDemoVib(1.45);
-      setDemoAnomaly(0.96);
-      setIsSirenActive(true);
-      startContinuousSiren();
-
-      const newCriticalAlert: AlertLifecycleEvent = {
-        alert_id: `ALT-CRIT-${Date.now().toString().slice(-4)}`,
-        tenant_id: currentTenantId,
-        site_id: currentSiteId,
-        zone_id: "Panel 7 / West Face",
-        severity: "critical",
-        state: "new",
-        raised_at: new Date().toISOString(),
-        time_to_critical_hours: [0.1, 0.4],
-        confidence_score: 0.98,
-        contributing_sensors: ["tilt_deg", "vibration_rms_mm_s"],
-        explanation_summary: "CRITICAL: Physical MPU6050 tilt breached 4.85° (Threshold: 4.00°). High-frequency vibration pulses indicate imminent roof strata delamination. On-device edge siren actuated (<5µs).",
-        acknowledged_by: null,
-        acknowledged_at: null,
-        escalated_at: null,
-      };
-
-      setActiveAlerts((prev) => [newCriticalAlert, ...prev]);
-      setSystemBanner("🚨 CRITICAL DRILL TRIGGERED: Tilt 4.85° > 4.00° • Edge Siren Actuated (<5µs) • Evacuate Panel 7!");
-    } else if (scenario === "mesh_drop") {
-      setSystemBanner("⚡ Mesh Multi-Hop Reroute: Direct line severed • Telemetry routing via Relay Node • Zero Loss");
-      setTimeout(() => setSystemBanner(null), 5000);
-    }
-  };
-
-  const handleSilenceSiren = () => {
-    stopContinuousSiren();
-    setIsSirenActive(false);
-    setSystemBanner("Audible Edge Siren Silenced by Control Room Protocol");
-    setTimeout(() => setSystemBanner(null), 3000);
-  };
-
   // --------------------------------------------------------------------------
   // LIVE WEBSOCKET SUBSCRIPTION
   // --------------------------------------------------------------------------
@@ -497,6 +378,13 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
       setTotalPacketsReceived((prev) => prev + 1);
       setLastPacketFlash(rec.node_id);
       setTimeout(() => setLastPacketFlash(null), 800);
+
+      // Track hardware readings for OLED mirror and Judge console if from N042
+      if (rec.node_id === "SS-PANEL7-N042" || rec.node_id.includes("N042")) {
+        if (rec.readings?.tilt_deg !== undefined) setDemoTilt(rec.readings.tilt_deg);
+        if (rec.readings?.vibration_rms_mm_s !== undefined) setDemoVib(rec.readings.vibration_rms_mm_s);
+        if (rec.anomaly_score !== undefined) setDemoAnomaly(rec.anomaly_score);
+      }
 
       setSensors((prev) => {
         const existing = prev[rec.node_id] || {
@@ -518,12 +406,20 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
         let status: "Healthy" | "At Risk" | "Critical" | "Offline" = "Healthy";
         let health: "Good" | "Fair" | "Poor" = "Good";
 
-        if (disp >= 3.0 || anomaly >= 0.75) {
+        if (disp >= 3.0 || anomaly >= 0.75 || tilt >= 4.0) {
           status = "Critical";
           health = "Poor";
-        } else if (disp >= 0.8 || tilt >= 0.1 || anomaly >= 0.35) {
+        } else if (disp >= 0.8 || tilt >= 2.0 || anomaly >= 0.35) {
           status = "At Risk";
           health = "Fair";
+        }
+
+        if ((rec as any).siren_triggered || tilt >= 4.0) {
+          setIsSirenActive(true);
+          startContinuousSiren();
+        } else if (tilt < 3.5 && !(rec as any).siren_triggered) {
+          setIsSirenActive(false);
+          stopContinuousSiren();
         }
 
         return {
@@ -557,13 +453,133 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
     };
   }, [currentTenantId, currentSiteId, currentUser.userId]);
 
-  // Live seconds ticker
+  // Live seconds ticker & simulated telemetry heartbeat
   useEffect(() => {
     const timer = setInterval(() => {
       setSecondsAgo((prev) => prev + 1);
     }, 1000);
-    return () => clearInterval(timer);
+
+    // Continuous dynamic telemetry pulse if streaming active
+    const simInterval = setInterval(() => {
+      if (!isStreamingActive) return;
+      setTotalPacketsReceived((prev) => prev + 1);
+      setSecondsAgo(0);
+
+      // Note: SS-PANEL7-N042 and demoTilt/demoVib are strictly driven by REAL physical hardware WebSocket telemetry.
+      // Background pulse only updates other simulated sensors (N043, N044, N045) on the 3D map:
+
+      // Also pulse another random sensor to show multi-node telemetry
+      setSensors((prev) => {
+        const next = { ...prev };
+        const keys = Object.keys(next).filter((k) => k !== "SS-PANEL7-N042");
+        if (keys.length === 0) return next;
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        const s = next[randomKey];
+        if (s) {
+          const dispJitter = (Math.random() - 0.49) * 0.02;
+          const tiltJitter = (Math.random() - 0.5) * 0.002;
+          const vibJitter = (Math.random() - 0.5) * 0.03;
+          next[randomKey] = {
+            ...s,
+            disp: Math.max(0.1, Number((s.disp + dispJitter).toFixed(2))),
+            tilt: Math.max(0.01, Number((s.tilt + tiltJitter).toFixed(3))),
+            vib: Math.max(0.1, Number((s.vib + vibJitter).toFixed(2))),
+            lastSeen: "Just now",
+          };
+          setLastPacketFlash(randomKey);
+          setTimeout(() => setLastPacketFlash(null), 600);
+        }
+        return next;
+      });
+    }, 2000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(simInterval);
+    };
   }, []);
+
+  // Dynamic Metric Configuration for Analytics View
+  const metricConfig = useMemo(() => {
+    switch (analyticsMetric) {
+      case "Displacement":
+        return {
+          unit: "mm",
+          yMax: 6.0,
+          yLabels: ["6.0", "4.5", "3.0", "1.5", "0.0"],
+          yThreshold: extensometerThreshold,
+          thresholdLabel: `Critical Alarm: ${extensometerThreshold.toFixed(1)} mm`,
+          currentVal: `${(sensors["SS-PANEL7-N042"]?.disp || 3.70).toFixed(2)} mm`,
+          historical: [1.2, 1.4, 1.8, 2.3, 2.9, 3.4, sensors["SS-PANEL7-N042"]?.disp || 3.70],
+          forecastP50: [3.9, 4.2, 4.6],
+          forecastP10: [3.7, 3.9, 4.1],
+          forecastP90: [4.1, 4.7, 5.4],
+          pathColor: "#10B981",
+        };
+      case "Tilt":
+        return {
+          unit: "deg",
+          yMax: 0.3,
+          yLabels: ["0.30", "0.22", "0.15", "0.07", "0.00"],
+          yThreshold: 0.15,
+          thresholdLabel: "Warning Threshold: 0.15°",
+          currentVal: `${(sensors["SS-PANEL7-N042"]?.tilt || 0.183).toFixed(3)}°`,
+          historical: [0.04, 0.05, 0.08, 0.11, 0.14, 0.17, sensors["SS-PANEL7-N042"]?.tilt || 0.183],
+          forecastP50: [0.20, 0.22, 0.25],
+          forecastP10: [0.18, 0.19, 0.21],
+          forecastP90: [0.22, 0.26, 0.29],
+          pathColor: "#F59E0B",
+        };
+      case "Vibration":
+        return {
+          unit: "mm/s",
+          yMax: 2.5,
+          yLabels: ["2.5", "1.9", "1.2", "0.6", "0.0"],
+          yThreshold: vibrationThreshold,
+          thresholdLabel: `Continuous Vibration Cutoff: ${vibrationThreshold.toFixed(1)} mm/s`,
+          currentVal: `${(sensors["SS-PANEL7-N042"]?.vib || 1.42).toFixed(2)} mm/s`,
+          historical: [0.35, 0.42, 0.65, 0.88, 1.15, 1.30, sensors["SS-PANEL7-N042"]?.vib || 1.42],
+          forecastP50: [1.45, 1.50, 1.55],
+          forecastP10: [1.35, 1.38, 1.40],
+          forecastP90: [1.60, 1.75, 1.95],
+          pathColor: "#06B6D4",
+        };
+      case "Crack Index":
+        return {
+          unit: "CI",
+          yMax: 1.0,
+          yLabels: ["1.0", "0.75", "0.50", "0.25", "0.0"],
+          yThreshold: 0.50,
+          thresholdLabel: "Fracture Opening Warning: 0.50",
+          currentVal: `${(sensors["SS-PANEL7-N042"]?.crack || 0.62).toFixed(2)}`,
+          historical: [0.05, 0.08, 0.18, 0.29, 0.42, 0.55, sensors["SS-PANEL7-N042"]?.crack || 0.62],
+          forecastP50: [0.65, 0.70, 0.76],
+          forecastP10: [0.61, 0.64, 0.68],
+          forecastP90: [0.70, 0.78, 0.86],
+          pathColor: "#A855F7",
+        };
+    }
+  }, [analyticsMetric, sensors, extensometerThreshold, vibrationThreshold]);
+
+  // Displayed Sensors for Sensors View
+  const displayedSensorsList = useMemo(() => {
+    let list = Object.values(sensors);
+    if (sensorStatusFilter !== "All") {
+      list = list.filter((s) => s.status === sensorStatusFilter);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.shortId.toLowerCase().includes(q) ||
+          s.nodeId.toLowerCase().includes(q) ||
+          s.zone.toLowerCase().includes(q) ||
+          s.status.toLowerCase().includes(q) ||
+          s.type.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [sensors, sensorStatusFilter, searchQuery]);
 
   // Compute Dynamic KPI Metrics from Live Sensor State
   const computedKPIs = useMemo(() => {
@@ -598,6 +614,173 @@ export const SubSenseAnalyticsDashboard: React.FC = () => {
     await switchRole(profile.role);
     setSystemBanner(`Active Operator Switched to: ${profile.name} (${profile.roleLabel})`);
     setTimeout(() => setSystemBanner(null), 5000);
+  };
+
+  const handleSilenceSiren = () => {
+    stopContinuousSiren();
+    setIsSirenActive(false);
+    setDemoScenario("normal");
+    setSystemBanner("Audible Edge Siren Silenced by Control Room Protocol");
+    setTimeout(() => setSystemBanner(null), 3000);
+  };
+
+  // Trigger Evacuation Siren Audio & Notification
+  const handleTriggerSiren = () => {
+    if (isSirenActive) {
+      handleSilenceSiren();
+    } else {
+      setIsSirenActive(true);
+      startContinuousSiren();
+      setSystemBanner("🚨 EMERGENCY EVACUATION SIREN ACTIVATED: Surface & Subsurface Annunciators Sounding across Panel 7");
+      setTimeout(() => setSystemBanner(null), 8000);
+    }
+  };
+
+  // Simulate Safety Drill (Critical or Warning)
+  const handleSimulateDrill = (severity: "critical" | "warning") => {
+    if (severity === "critical") {
+      setDemoScenario("critical");
+      setDemoTilt(4.85);
+      setDemoVib(1.45);
+      setDemoAnomaly(0.96);
+      setIsSirenActive(true);
+      startContinuousSiren();
+    } else {
+      setDemoScenario("warning");
+      setDemoTilt(2.35);
+      setDemoVib(0.58);
+      setDemoAnomaly(0.52);
+    }
+
+    const drillAlert: AlertLifecycleEvent = {
+      alert_id: `ALT-DRILL-${Date.now().toString().slice(-4)}`,
+      tenant_id: currentTenantId,
+      site_id: "PANEL7-JHARIA",
+      zone_id: severity === "critical" ? "Panel 7 / Zone C (Pit Floor)" : "Panel 7 / Zone B (Mid Bench)",
+      severity,
+      state: "new",
+      raised_at: new Date().toISOString(),
+      time_to_critical_hours: severity === "critical" ? [1.2, 3.5] : [6.0, 18.0],
+      confidence_score: 0.96,
+      contributing_sensors: severity === "critical" ? ["extensometer_displacement_mm", "micro_seismic_rms"] : ["inclinometer_tilt_deg"],
+      explanation_summary:
+        severity === "critical"
+          ? "DRILL SIMULATION: Accelerated extensometer displacement exceeding 3.82mm with impending strata delamination."
+          : "DRILL SIMULATION: Bench crest tilt divergence detected across neighboring inclinometer cluster.",
+      acknowledged_by: null,
+      acknowledged_at: null,
+      escalated_at: null,
+    };
+    playAudibleAlertChime(severity);
+    setActiveAlerts((prev) => [drillAlert, ...prev]);
+    setSystemBanner(`SIMULATED DRILL INITIATED: ${severity.toUpperCase()} safety alert dispatched to control room!`);
+    setTimeout(() => setSystemBanner(null), 5000);
+  };
+
+  // Scenario Trigger for Judge Evaluation Console
+  const handleTriggerScenario = (scenario: "normal" | "warning" | "critical" | "mesh_drop") => {
+    setDemoScenario(scenario);
+    if (scenario === "critical") {
+      handleSimulateDrill("critical");
+    } else if (scenario === "warning") {
+      handleSimulateDrill("warning");
+    } else if (scenario === "normal") {
+      stopContinuousSiren();
+      setIsSirenActive(false);
+      setDemoTilt(0.12);
+      setDemoVib(0.02);
+      setDemoAnomaly(0.05);
+      setSensors((prev) => ({
+        ...prev,
+        "SS-PANEL7-N042": {
+          ...prev["SS-PANEL7-N042"],
+          status: "Healthy",
+          health: "Good",
+          tilt: 0.12,
+          vib: 0.02,
+          anomaly: 0.05,
+        },
+      }));
+      setSystemBanner("Scenario Reset: Nominal baseline conditions restored.");
+      setTimeout(() => setSystemBanner(null), 3000);
+    } else if (scenario === "mesh_drop") {
+      setSystemBanner("SIMULATION: Mesh Relay Node SS-PANEL7-N021 Dropped. Dynamic Self-Healing Rerouting Active.");
+      setSensors((prev) => ({
+        ...prev,
+        "SS-PANEL7-N021": {
+          ...prev["SS-PANEL7-N021"],
+          status: "Offline",
+          health: "Poor",
+        },
+      }));
+      setTimeout(() => setSystemBanner(null), 6000);
+    }
+  };
+
+  // Flag False Alarm Handler
+  const handleConfirmFalseAlarm = () => {
+    if (!falseAlarmModalAlert) return;
+    setActiveAlerts((prev) =>
+      prev.map((a) =>
+        a.alert_id === falseAlarmModalAlert.alert_id
+          ? {
+              ...a,
+              state: "false_alarm",
+              explanation_summary: `[FALSE ALARM: ${falseAlarmReason}] ${a.explanation_summary}`,
+            }
+          : a
+      )
+    );
+    setSystemBanner(`Alert ${falseAlarmModalAlert.alert_id} flagged as False Alarm (${falseAlarmReason})`);
+    setTimeout(() => setSystemBanner(null), 5000);
+    setFalseAlarmModalAlert(null);
+  };
+
+  // Resolve Alert Handler
+  const handleResolveAlert = (alertId: string) => {
+    setActiveAlerts((prev) =>
+      prev.map((a) => (a.alert_id === alertId ? { ...a, state: "resolved" } : a))
+    );
+    setDemoScenario("normal");
+    setDemoTilt(0.85);
+    setDemoVib(0.14);
+    setDemoAnomaly(0.08);
+    stopContinuousSiren();
+    setIsSirenActive(false);
+    setSystemBanner(`Alert ${alertId} resolved and logged to cryptographic safety ledger.`);
+    setTimeout(() => setSystemBanner(null), 4000);
+  };
+
+  // Provision New Sensor Node Handler
+  const handleProvisionSensor = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSensorId) return;
+    setIsProvisioning(true);
+    setTimeout(() => {
+      setSensors((prev) => ({
+        ...prev,
+        [newSensorId]: {
+          nodeId: newSensorId,
+          shortId: newSensorId.replace("SS-PANEL7-", ""),
+          zone: newSensorZone,
+          disp: 0.15,
+          tilt: 0.025,
+          vib: 0.35,
+          crack: 0.02,
+          anomaly: 0.05,
+          status: "Healthy",
+          health: "Good",
+          batt: 99,
+          rssi: -65,
+          hops: 1,
+          type: newSensorType,
+          lastSeen: "Just now",
+        },
+      }));
+      setIsProvisioning(false);
+      setSystemBanner(`Sensor Node ${newSensorId} provisioned with Zero-Downtime to Mesh array!`);
+      setTimeout(() => setSystemBanner(null), 5000);
+    }, 600);
   };
 
   // Handle Audible ACK Submission
@@ -721,23 +904,21 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* SIH 2026 JUDGE LIVE EVALUATION DEMO CONSOLE               */}
-      {/* ========================================================= */}
-      <JudgeDemoConsole
-        onTriggerScenario={handleTriggerScenario}
-        activeScenario={demoScenario}
-        packetsCount={totalPacketsReceived}
-        isStreaming={isStreamingActive}
-        onToggleStreaming={() => setIsStreamingActive(!isStreamingActive)}
-        currentTilt={demoTilt}
-        currentVib={demoVib}
-        currentAnomaly={demoAnomaly}
-        sirenActive={isSirenActive}
-        onSilenceSiren={handleSilenceSiren}
-        onToggleOledMirror={() => setShowOledMirror(!showOledMirror)}
-        showOledMirror={showOledMirror}
-      />
+      {/* Evacuation Alert Banner if active */}
+      {isSirenActive && (
+        <div className="bg-red-600 text-white px-4 py-2 flex items-center justify-between z-40 animate-pulse">
+          <div className="flex items-center gap-2 text-xs font-bold font-mono">
+            <AlertOctagon className="w-4 h-4 text-white" />
+            <span>EMERGENCY EVACUATION ORDER ISSUED FOR SECTOR NORTH WALL (BENCH 4) — SIREN ACTIVE</span>
+          </div>
+          <button
+            onClick={handleSilenceSiren}
+            className="px-2.5 py-1 bg-white text-red-700 hover:bg-slate-100 rounded text-[11px] font-bold tracking-wide transition-colors cursor-pointer"
+          >
+            Silence Siren
+          </button>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* 1. TOP NAV BAR WITH ALL 4 OPERATOR PROFILES               */}
@@ -745,15 +926,14 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
       <header className="h-14 bg-[#0A101D] border-b border-[#162238] px-5 flex items-center justify-between gap-4 sticky top-0 z-40">
         {/* Left: Brand Logo & Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-indigo-600 to-cyan-400 flex items-center justify-center shadow-md shadow-blue-500/20">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current" stroke="none">
-              <path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13.5h-13L12 6.5z" />
-            </svg>
-          </div>
+          <SubSenseLogo size="md" />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-white tracking-tight text-base leading-none">
                 SubSense
+              </span>
+              <span className="text-[9px] font-mono font-semibold uppercase px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                Live Cockpit
               </span>
             </div>
             <p className="text-[10px] text-[#8899A6] tracking-tight leading-none mt-1 font-normal">
@@ -872,6 +1052,22 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
         </div>
       </header>
 
+      {/* SIH 2026 Judge Evaluation Console */}
+      <JudgeDemoConsole
+        onTriggerScenario={handleTriggerScenario}
+        activeScenario={demoScenario}
+        packetsCount={totalPacketsReceived}
+        isStreaming={isStreamingActive}
+        onToggleStreaming={() => setIsStreamingActive((prev) => !prev)}
+        currentTilt={demoTilt}
+        currentVib={demoVib}
+        currentAnomaly={demoAnomaly}
+        sirenActive={isSirenActive}
+        onSilenceSiren={handleSilenceSiren}
+        onToggleOledMirror={() => setShowOledMirror((prev) => !prev)}
+        showOledMirror={showOledMirror}
+      />
+
       {/* ========================================================= */}
       {/* 2. MAIN WORKSPACE WITH 4 ROLE SPECIFIC VIEWS              */}
       {/* ========================================================= */}
@@ -944,8 +1140,8 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
             )}
             {activeOperator.role === "mine_operator" && (
               <button
-                onClick={() => handleTriggerScenario("critical")}
-                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors animate-pulse"
+                onClick={handleTriggerSiren}
+                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
               >
                 <AlertOctagon className="w-3 h-3" />
                 <span>Test Evacuation Siren</span>
@@ -954,12 +1150,35 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
             {activeOperator.role === "geotech_planner" && (
               <button
                 onClick={() => setActiveNav("Analytics")}
-                className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors"
+                className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
               >
                 <BarChart3 className="w-3 h-3" />
                 <span>Open BiLSTM Forecast Cones</span>
               </button>
             )}
+            {activeOperator.role === "site_admin" && (
+              <button
+                onClick={() => setActiveNav("Settings")}
+                className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Open System Provisioning</span>
+              </button>
+            )}
+
+            {/* Hardware Node OLED Telemetry Mirror Toggle */}
+            <button
+              onClick={() => setShowOledMirror(!showOledMirror)}
+              className={`px-2.5 py-1 rounded text-[10px] font-mono flex items-center gap-1.5 transition-colors border cursor-pointer ${
+                showOledMirror
+                  ? "bg-cyan-950/80 text-cyan-300 border-cyan-500/40"
+                  : "bg-[#0E1726] text-[#8899A6] border-[#162238] hover:text-white"
+              }`}
+              title="Toggle physical ESP32 OLED Node Live Mirror"
+            >
+              <Cpu className="w-3 h-3 text-cyan-400" />
+              <span>OLED Mirror ({showOledMirror ? "ON" : "OFF"})</span>
+            </button>
           </div>
 
           {/* ===================================================== */}
@@ -1788,16 +2007,16 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
               {/* Main Area Chart with Metric Switcher */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 <div className="lg:col-span-8 bg-[#0D1527] border border-[#162238] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-1.5 bg-[#070D18] p-1 rounded-full border border-[#162238]">
                       {(["Displacement", "Tilt", "Vibration", "Crack Index"] as const).map((tab) => (
                         <button
                           key={tab}
                           onClick={() => setAnalyticsMetric(tab)}
                           className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                             analyticsMetric === tab
-                              ? "bg-emerald-600 text-white font-semibold"
-                              : "bg-[#070D18] text-[#8899A6] hover:text-white border border-[#162238]"
+                              ? "bg-blue-600 text-white font-semibold shadow-sm"
+                              : "text-[#8899A6] hover:text-white"
                           }`}
                         >
                           {tab}
@@ -1805,72 +2024,165 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
                       ))}
                     </div>
 
-                    {activeOperator.role === "geotech_planner" && (
-                      <span className="text-[10px] text-blue-400 font-mono flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                        <SparklesIcon className="w-3 h-3" /> BiLSTM Cones (P10/P50/P90) Active
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 text-xs">
+                      <button
+                        onClick={() => setBilstmConesActive(!bilstmConesActive)}
+                        className={`px-2.5 py-1 rounded-lg border font-mono text-[11px] flex items-center gap-1.5 transition-colors ${
+                          bilstmConesActive
+                            ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold"
+                            : "bg-[#070D18] text-[#8899A6] border-[#162238] hover:text-white"
+                        }`}
+                      >
+                        <SparklesIcon className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>BiLSTM Cones (P10/P90)</span>
+                      </button>
+
+                      <button
+                        onClick={() => setBlastCorrelationActive(!blastCorrelationActive)}
+                        className={`px-2.5 py-1 rounded-lg border font-mono text-[11px] flex items-center gap-1.5 transition-colors ${
+                          blastCorrelationActive
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold"
+                            : "bg-[#070D18] text-[#8899A6] border-[#162238] hover:text-white"
+                        }`}
+                      >
+                        <Activity className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Blast Correlation</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="h-56 relative w-full">
                     <svg viewBox="0 0 500 160" className="w-full h-full overflow-visible">
                       <defs>
-                        <linearGradient id="emeraldGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                        <linearGradient id="metricGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={metricConfig.pathColor} stopOpacity="0.25" />
+                          <stop offset="100%" stopColor={metricConfig.pathColor} stopOpacity="0" />
+                        </linearGradient>
+                        <linearGradient id="coneGrad" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.15" />
+                          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.35" />
                         </linearGradient>
                       </defs>
 
-                      {[15, 60, 105, 145].map((y, idx) => (
+                      {/* Grid Lines & Y-Axis Labels */}
+                      {[15, 47, 79, 111, 143].map((y, idx) => (
                         <g key={y}>
-                          <line x1="30" y1={y} x2="490" y2={y} stroke="#162238" strokeDasharray="2 2" />
-                          <text x="20" y={y + 3} textAnchor="end" fill="#64748B" fontSize="9" fontFamily="monospace">
-                            {(6.0 - idx * 2.0).toFixed(1)}
+                          <line x1="35" y1={y} x2="490" y2={y} stroke="#162238" strokeDasharray="2 2" />
+                          <text x="28" y={y + 3} textAnchor="end" fill="#64748B" fontSize="9" fontFamily="monospace">
+                            {metricConfig.yLabels[idx]}
                           </text>
                         </g>
                       ))}
 
+                      {/* Threshold Reference Line */}
+                      <g>
+                        <line x1="35" y1="65" x2="490" y2="65" stroke="#EF4444" strokeDasharray="3 3" strokeWidth="1.2" opacity="0.6" />
+                        <text x="490" y="61" textAnchor="end" fill="#EF4444" fontSize="8" fontFamily="monospace">
+                          {metricConfig.thresholdLabel}
+                        </text>
+                      </g>
+
+                      {/* Blast Correlation Markers */}
+                      {blastCorrelationActive && (
+                        <>
+                          <line x1="180" y1="10" x2="180" y2="145" stroke="#F59E0B" strokeDasharray="3 2" strokeWidth="1.5" />
+                          <text x="180" y="8" textAnchor="middle" fill="#F59E0B" fontSize="8" fontWeight="bold">
+                            💥 Controlled Blast #14
+                          </text>
+                          <line x1="390" y1="10" x2="390" y2="145" stroke="#F59E0B" strokeDasharray="3 2" strokeWidth="1.5" />
+                          <text x="390" y="8" textAnchor="middle" fill="#F59E0B" fontSize="8" fontWeight="bold">
+                            💥 Controlled Blast #15
+                          </text>
+                        </>
+                      )}
+
+                      {/* X-Axis Dates */}
                       {[
                         { x: 40, l: "Sep 03" },
-                        { x: 110, l: "Sep 04" },
-                        { x: 180, l: "Sep 05" },
-                        { x: 250, l: "Sep 06" },
-                        { x: 320, l: "Sep 07" },
-                        { x: 390, l: "Sep 08" },
-                        { x: 460, l: "Sep 09" },
+                        { x: 100, l: "Sep 04" },
+                        { x: 160, l: "Sep 05" },
+                        { x: 220, l: "Sep 06" },
+                        { x: 280, l: "Sep 07" },
+                        { x: 340, l: "Sep 08" },
+                        { x: 400, l: "Now (Sep 09)" },
+                        { x: 460, l: "+24h (P90)" },
                       ].map((t) => (
-                        <text key={t.x} x={t.x} y="158" textAnchor="middle" fill="#64748B" fontSize="9" fontFamily="monospace">
+                        <text key={t.x} x={t.x} y="156" textAnchor="middle" fill="#64748B" fontSize="8" fontFamily="monospace">
                           {t.l}
                         </text>
                       ))}
 
+                      {/* Area Fill */}
                       <path
-                        d="M 40 135 C 110 130, 180 115, 250 100 C 320 85, 390 105, 460 95 L 460 145 L 40 145 Z"
-                        fill="url(#emeraldGrad)"
+                        d="M 40 135 C 100 130, 160 120, 220 105 C 280 90, 340 60, 400 35 L 400 145 L 40 145 Z"
+                        fill="url(#metricGrad)"
                       />
 
+                      {/* Historical Trajectory Curve */}
                       <path
-                        d="M 40 135 C 110 130, 180 115, 250 100 C 320 85, 390 105, 460 95"
+                        d="M 40 135 C 100 130, 160 120, 220 105 C 280 90, 340 60, 400 35"
                         fill="none"
-                        stroke="#10B981"
+                        stroke={metricConfig.pathColor}
                         strokeWidth="2.5"
                       />
 
-                      <circle cx="40" cy="135" r="3" fill="#10B981" />
-                      <circle cx="110" cy="128" r="3" fill="#10B981" />
-                      <circle cx="180" cy="118" r="3" fill="#10B981" />
-                      <circle cx="250" cy="100" r="3" fill="#10B981" />
-                      <circle cx="320" cy="85" r="4" fill="#10B981" stroke="#fff" strokeWidth="1.5" />
-                      <circle cx="390" cy="102" r="3" fill="#10B981" />
-                      <circle cx="460" cy="95" r="3" fill="#10B981" />
+                      {/* Historical Data Points */}
+                      <circle cx="40" cy="135" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="100" cy="130" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="160" cy="120" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="220" cy="105" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="280" cy="90" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="340" cy="60" r="3" fill={metricConfig.pathColor} />
+                      <circle cx="400" cy="35" r="4.5" fill={metricConfig.pathColor} stroke="#fff" strokeWidth="2" />
 
-                      <g transform="translate(285, 45)">
-                        <rect width="70" height="28" rx="5" fill="#0A101D" stroke="#10B981" strokeWidth="1" />
-                        <text x="35" y="12" textAnchor="middle" fill="#8899A6" fontSize="8">
-                          Sep 07, 2026
+                      {/* BiLSTM Quantile Uncertainty Forecast Cones (+24h to +48h) */}
+                      {bilstmConesActive && (
+                        <>
+                          {/* Forecast Uncertainty Fan Shaded Area */}
+                          <polygon
+                            points="400,35 460,18 490,12 490,48 460,42 400,35"
+                            fill="url(#coneGrad)"
+                          />
+                          {/* Upper Quantile (P90 - Worst Case) */}
+                          <path
+                            d="M 400 35 C 430 25, 460 18, 490 12"
+                            fill="none"
+                            stroke="#EF4444"
+                            strokeWidth="2"
+                            strokeDasharray="4 2"
+                          />
+                          {/* Median Forecast (P50) */}
+                          <path
+                            d="M 400 35 C 430 30, 460 28, 490 26"
+                            fill="none"
+                            stroke="#38BDF8"
+                            strokeWidth="2"
+                          />
+                          {/* Lower Quantile (P10 - Best Case) */}
+                          <path
+                            d="M 400 35 C 430 38, 460 42, 490 48"
+                            fill="none"
+                            stroke="#10B981"
+                            strokeWidth="1.5"
+                            strokeDasharray="4 2"
+                          />
+                          <text x="490" y="9" textAnchor="end" fill="#EF4444" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                            P90 Hazard (5.4 {metricConfig.unit})
+                          </text>
+                          <text x="490" y="24" textAnchor="end" fill="#38BDF8" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                            P50 (4.6 {metricConfig.unit})
+                          </text>
+                        </>
+                      )}
+
+                      {/* Current Point Tooltip Chip */}
+                      <g transform="translate(340, 10)">
+                        <rect width="85" height="26" rx="6" fill="#0A101D" stroke={metricConfig.pathColor} strokeWidth="1" />
+                        <text x="42" y="11" textAnchor="middle" fill="#8899A6" fontSize="8">
+                          Latest Reading
                         </text>
-                        <text x="35" y="22" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">
-                          • 4.2 mm
+                        <text x="42" y="21" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">
+                          {metricConfig.currentVal}
                         </text>
                       </g>
                     </svg>
@@ -1971,21 +2283,42 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
                   </p>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex items-center bg-[#0D1527] p-1 rounded-lg border border-[#162238] text-xs">
-                  {(["All", "Critical", "Warning", "Info"] as const).map((filter) => (
+                {/* Top Controls: Filter Pills & Simulate Drill Action */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center bg-[#0D1527] p-1 rounded-lg border border-[#162238] text-xs">
+                    {(["All", "Critical", "Warning", "Info"] as const).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setAlertsFilter(filter)}
+                        className={`px-3 py-1 rounded-md font-medium transition-colors ${
+                          alertsFilter === filter
+                            ? "bg-blue-600 text-white font-semibold"
+                            : "text-[#8899A6] hover:text-white"
+                        }`}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs">
                     <button
-                      key={filter}
-                      onClick={() => setAlertsFilter(filter)}
-                      className={`px-3 py-1 rounded-md font-medium transition-colors ${
-                        alertsFilter === filter
-                          ? "bg-emerald-600 text-white font-semibold"
-                          : "text-[#8899A6] hover:text-white"
-                      }`}
+                      onClick={() => handleSimulateDrill("critical")}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-colors"
+                      title="Trigger realistic simulated strata critical displacement drill"
                     >
-                      {filter}
+                      <AlertOctagon className="w-3.5 h-3.5" />
+                      <span>Simulate Critical Drill</span>
                     </button>
-                  ))}
+                    <button
+                      onClick={() => handleSimulateDrill("warning")}
+                      className="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-colors"
+                      title="Trigger realistic simulated bench crest tilt warning drill"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Simulate Warning Drill</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1997,8 +2330,7 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
                     .map((item) => (
                       <div
                         key={item.alert_id}
-                        onClick={() => setModalAckAlert(item)}
-                        className={`bg-[#0D1527] border hover:border-white/30 rounded-xl p-3.5 flex items-center justify-between cursor-pointer transition-all ${
+                        className={`bg-[#0D1527] border hover:border-white/30 rounded-xl p-4 transition-all ${
                           item.severity === "critical"
                             ? "border-red-500/40 bg-red-500/5"
                             : item.severity === "warning"
@@ -2006,41 +2338,90 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
                             : "border-blue-500/40 bg-blue-500/5"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                              item.severity === "critical"
-                                ? "bg-red-500/20 text-red-400"
-                                : item.severity === "warning"
-                                ? "bg-amber-500/20 text-amber-400"
-                                : "bg-blue-500/20 text-blue-400"
-                            }`}
-                          >
-                            <AlertTriangle className="w-4 h-4" />
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                item.severity === "critical"
+                                  ? "bg-red-500/20 text-red-400"
+                                  : item.severity === "warning"
+                                  ? "bg-amber-500/20 text-amber-400"
+                                  : "bg-blue-500/20 text-blue-400"
+                              }`}
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                  {item.alert_id}
+                                </span>
+                                <span className="text-[11px] text-[#8899A6] font-mono">
+                                  {item.raised_at ? new Date(item.raised_at).toLocaleTimeString() : "Recent"}
+                                </span>
+                              </div>
+                              <h4 className="text-xs font-bold text-white mt-1">
+                                {item.explanation_summary || (item as any).explanation}
+                              </h4>
+                              <p className="text-[11px] text-[#8899A6] mt-0.5">
+                                {item.zone_id} • Status: <strong className="text-white uppercase">{item.state}</strong>
+                                {item.acknowledged_by && (
+                                  <span className="text-emerald-400 ml-1.5 font-medium">
+                                    (ACK by {item.acknowledged_by})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{item.explanation_summary || (item as any).explanation}</h4>
-                            <p className="text-[11px] text-[#8899A6] mt-0.5">
-                              {item.zone_id} • Status: <strong className="text-white uppercase">{item.state}</strong>
-                            </p>
+
+                          <div className="text-right shrink-0">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold border block mb-1 text-center ${
+                                item.severity === "critical"
+                                  ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                  : item.severity === "warning"
+                                  ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                                  : "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                              }`}
+                            >
+                              {item.severity.toUpperCase()}
+                            </span>
+                            <span className="text-[10px] text-[#8899A6] font-mono uppercase">
+                              {item.state}
+                            </span>
                           </div>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <span className="text-[10px] text-[#8899A6] font-mono block mb-1">
-                            {item.state === "acknowledged" ? "ACKNOWLEDGED" : "PENDING"}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[9px] font-bold border ${
-                              item.severity === "critical"
-                                ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                : item.severity === "warning"
-                                ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                                : "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                            }`}
-                          >
-                            {item.severity.toUpperCase()}
-                          </span>
+                        {/* Action Buttons Toolbar for this alert */}
+                        <div className="flex items-center justify-end gap-2 mt-3 pt-2.5 border-t border-[#162238] text-xs">
+                          {item.state !== "acknowledged" && item.state !== "resolved" && item.state !== "false_alarm" && (
+                            <button
+                              onClick={() => setModalAckAlert(item)}
+                              className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] flex items-center gap-1 transition-colors"
+                            >
+                              <Volume2 className="w-3 h-3" />
+                              <span>Audible Acknowledge</span>
+                            </button>
+                          )}
+
+                          {item.state === "acknowledged" && (
+                            <button
+                              onClick={() => handleResolveAlert(item.alert_id)}
+                              className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1 transition-colors"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Resolve Alert</span>
+                            </button>
+                          )}
+
+                          {item.state !== "false_alarm" && item.state !== "resolved" && (
+                            <button
+                              onClick={() => setFalseAlarmModalAlert(item)}
+                              className="px-2.5 py-1 rounded-lg bg-[#162238] hover:bg-[#23354E] text-[#8899A6] hover:text-amber-300 font-medium text-[11px] transition-colors border border-[#23354E]"
+                            >
+                              Flag False Alarm
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2130,28 +2511,73 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
           {/* ===================================================== */}
           {activeNav === "Sensors" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h1 className="text-xl font-bold text-white">Sensors & Mesh Topology</h1>
+                  <h1 className="text-xl font-bold text-white tracking-tight">Sensors & Mesh Topology</h1>
                   <p className="text-xs text-[#8899A6] mt-0.5">Physical borehole sensor array across Jharia Seam 7</p>
                 </div>
-                <button
-                  onClick={() => setActiveNav("Overview")}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium"
-                >
-                  ← Back to Overview
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportCSV}
+                    className="px-3 py-1.5 rounded-lg bg-[#0E1726] hover:bg-[#162238] border border-[#182438] text-xs font-medium text-[#E2E8F0] flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Export CSV</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveNav("Overview")}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
+                  >
+                    ← Back to Overview
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {Object.values(sensors).map((s) => (
+              {/* Status Filter Pills & Quick Search */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0D1527] border border-[#162238] p-2.5 rounded-xl">
+                <div className="flex items-center gap-1">
+                  {(["All", "Healthy", "At Risk", "Critical", "Offline"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setSensorStatusFilter(filter)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        sensorStatusFilter === filter
+                          ? "bg-blue-600 text-white font-semibold shadow-sm"
+                          : "text-[#8899A6] hover:text-white hover:bg-[#162238]"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative w-64">
+                  <Search className="w-3.5 h-3.5 text-[#8899A6] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search node ID, zone, type..."
+                    className="w-full bg-[#070D18] border border-[#162238] rounded-lg pl-8 pr-3 py-1 text-xs text-white placeholder:text-[#64748B] focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sensor Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedSensorsList.map((s) => (
                   <div
                     key={s.nodeId}
-                    onClick={() => setInspectingNodeId(s.nodeId)}
-                    className="bg-[#0D1527] border border-[#162238] hover:border-cyan-500/40 rounded-xl p-4 space-y-2 cursor-pointer transition-colors"
+                    className={`bg-[#0D1527] border rounded-xl p-4 space-y-3 transition-all ${
+                      lastPacketFlash === s.nodeId ? "border-cyan-500 bg-cyan-500/5" : "border-[#162238] hover:border-cyan-500/40"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-white text-base">{s.shortId}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+                        <span className="font-mono font-bold text-white text-base">{s.shortId}</span>
+                        <span className="text-[10px] text-[#8899A6] font-mono">({s.nodeId})</span>
+                      </div>
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           s.status === "Critical"
@@ -2164,20 +2590,52 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
                         {s.status}
                       </span>
                     </div>
-                    <div className="text-xs text-[#8899A6]">{s.type}</div>
-                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-[#162238] text-[11px] font-mono">
+
+                    <div className="text-xs text-[#8899A6]">{s.type} • {s.zone}</div>
+
+                    <div className="grid grid-cols-3 gap-1 py-2 border-y border-[#162238] text-[11px] font-mono">
                       <div>
                         <div className="text-[9px] text-[#8899A6]">Displacement</div>
                         <div className="text-white font-bold">{s.disp.toFixed(2)} mm</div>
                       </div>
                       <div>
-                        <div className="text-[9px] text-[#8899A6]">Battery</div>
-                        <div className="text-emerald-400">{s.batt}%</div>
+                        <div className="text-[9px] text-[#8899A6]">Tilt</div>
+                        <div className="text-white font-bold">{s.tilt.toFixed(3)}°</div>
                       </div>
                       <div>
-                        <div className="text-[9px] text-[#8899A6]">Signal</div>
-                        <div className="text-blue-400">{s.rssi} dBm</div>
+                        <div className="text-[9px] text-[#8899A6]">Vibration</div>
+                        <div className="text-white font-bold">{s.vib.toFixed(2)} mm/s</div>
                       </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-[#8899A6] font-mono">
+                      <span className="text-emerald-400 flex items-center gap-1">
+                        <Battery className="w-3 h-3" /> {s.batt}%
+                      </span>
+                      <span className="text-blue-400 flex items-center gap-1">
+                        <Wifi className="w-3 h-3" /> {s.rssi} dBm
+                      </span>
+                      <span>{s.hops} hops</span>
+                      <span>{s.lastSeen}</span>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => {
+                          setSelectedTwinNodeId(s.nodeId);
+                          setActiveNav("Map / Digital Twin");
+                        }}
+                        className="flex-1 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                      >
+                        <Layers className="w-3 h-3" />
+                        <span>Locate on 3D Twin</span>
+                      </button>
+                      <button
+                        onClick={() => setInspectingNodeId(s.nodeId)}
+                        className="px-3 py-1.5 rounded-lg bg-[#162238] hover:bg-[#23354E] text-white text-[11px] font-semibold transition-colors"
+                      >
+                        Inspect
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2243,40 +2701,134 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-[#0D1527] border border-[#162238] rounded-xl p-4 space-y-3">
-                  <h3 className="text-sm font-bold text-white">Alert Escalation & Threshold Protocols</h3>
-                  <div className="space-y-2 text-xs text-[#8899A6]">
-                    <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Server-Enforced Escalation Timer</span>
-                      <span className="text-white font-mono font-semibold">300 seconds (5 min)</span>
+                <div className="bg-[#0D1527] border border-[#162238] rounded-xl p-4 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-cyan-400" />
+                    <span>Alert Escalation & Threshold Cutoffs</span>
+                  </h3>
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <div className="flex justify-between py-1 text-[#8899A6]">
+                        <span>Critical Extensometer Threshold:</span>
+                        <span className="text-red-400 font-mono font-bold">{extensometerThreshold.toFixed(1)} mm</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1.5"
+                        max="5.0"
+                        step="0.1"
+                        value={extensometerThreshold}
+                        onChange={(e) => setExtensometerThreshold(parseFloat(e.target.value))}
+                        className="w-full accent-cyan-500 cursor-pointer"
+                      />
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Critical Extensometer Threshold</span>
-                      <span className="text-red-400 font-mono font-semibold">&gt; 3.00 mm</span>
+
+                    <div>
+                      <div className="flex justify-between py-1 text-[#8899A6]">
+                        <span>Continuous Vibration Cutoff:</span>
+                        <span className="text-amber-400 font-mono font-bold">{vibrationThreshold.toFixed(1)} mm/s</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="3.0"
+                        step="0.1"
+                        value={vibrationThreshold}
+                        onChange={(e) => setVibrationThreshold(parseFloat(e.target.value))}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Vibration Anomaly Cutoff</span>
-                      <span className="text-amber-400 font-mono font-semibold">&gt; 1.20 mm/s</span>
+
+                    <div className="flex justify-between py-1.5 border-t border-[#162238] text-[#8899A6]">
+                      <span>Server Escalation Countdown:</span>
+                      <span className="text-white font-mono font-semibold">300s (5 min server-enforced)</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-[#0D1527] border border-[#162238] rounded-xl p-4 space-y-3">
-                  <h3 className="text-sm font-bold text-white">Cryptographic Safety Ledger & RLS</h3>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Radio className="w-4 h-4 text-emerald-400" />
+                    <span>LoRaWAN Mesh Gateway & Security</span>
+                  </h3>
                   <div className="space-y-2 text-xs text-[#8899A6]">
                     <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Tenant Row-Level Security</span>
+                      <span>Mesh Carrier Frequency:</span>
+                      <span className="text-white font-mono font-semibold">868.1 MHz (Sub-GHz ISM)</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-[#162238]">
+                      <span>Tenant Row-Level Security:</span>
                       <span className="text-emerald-400 font-mono font-semibold">Enforced (PostgreSQL 16)</span>
                     </div>
                     <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Audit Trail Hash Chaining</span>
-                      <span className="text-emerald-400 font-mono font-semibold">SHA-256 Chained</span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-[#162238]">
-                      <span>Zero Silent Staleness Check</span>
-                      <span className="text-emerald-400 font-mono font-semibold">Active (&lt;90s heartbeat)</span>
+                      <span>Audit Trail Hash Chaining:</span>
+                      <span className="text-emerald-400 font-mono font-semibold">SHA-256 Active</span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      setSystemBanner("Gateway Diagnostic: All 4 concentrator channels nominal. RSSI: -68 dBm");
+                      setTimeout(() => setSystemBanner(null), 4000);
+                    }}
+                    className="w-full py-2 rounded-lg bg-[#162238] hover:bg-[#23354E] text-cyan-400 font-semibold text-xs transition-colors border border-cyan-500/20"
+                  >
+                    Ping LoRaWAN Concentrator
+                  </button>
+                </div>
+
+                {/* Provision New Sensor Node Card */}
+                <div className="md:col-span-2 bg-[#0D1527] border border-[#162238] rounded-xl p-4">
+                  <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-purple-400" />
+                    <span>Zero-Downtime Sensor Provisioning</span>
+                  </h3>
+                  <p className="text-xs text-[#8899A6] mb-3">Onboard a new physical sensor node into Panel 7 mesh network</p>
+
+                  <form onSubmit={handleProvisionSensor} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-[10px] text-[#8899A6] mb-1">Node Identifier</label>
+                      <input
+                        type="text"
+                        value={newSensorId}
+                        onChange={(e) => setNewSensorId(e.target.value)}
+                        className="w-full bg-[#070D18] border border-[#162238] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        placeholder="SS-PANEL7-N..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-[#8899A6] mb-1">Sensor Instrument Type</label>
+                      <select
+                        value={newSensorType}
+                        onChange={(e) => setNewSensorType(e.target.value)}
+                        className="w-full bg-[#070D18] border border-[#162238] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="Extensometer + IMU">Extensometer + IMU</option>
+                        <option value="Inclinometer Mesh Node">Inclinometer Mesh Node</option>
+                        <option value="Piezometer + Tiltmeter">Piezometer + Tiltmeter</option>
+                        <option value="Borehole Crack Index Meter">Borehole Crack Index Meter</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-[#8899A6] mb-1">Pit Zone</label>
+                      <input
+                        type="text"
+                        value={newSensorZone}
+                        onChange={(e) => setNewSensorZone(e.target.value)}
+                        className="w-full bg-[#070D18] border border-[#162238] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        disabled={isProvisioning}
+                        className="w-full py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{isProvisioning ? "Provisioning..." : "Provision Node"}</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
@@ -2456,6 +3008,9 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
         </div>
       )}
 
+      {/* ========================================================= */}
+      {/* 5. MODAL: FLAG FALSE ALARM AUDIT MODAL                    */}
+      {/* ========================================================= */}
       {/* Physical Sensor Node OLED Live Hardware Mirror */}
       {showOledMirror && (
         <OledDisplayMirror
@@ -2467,6 +3022,86 @@ Generated By: ${activeOperator.name} (${activeOperator.roleLabel})
           sirenActive={isSirenActive}
           onClose={() => setShowOledMirror(false)}
         />
+      )}
+
+      {falseAlarmModalAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0D1527] border-2 border-amber-500/80 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-amber-950/80 border-b border-amber-800/80 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-amber-300 font-bold">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-mono uppercase tracking-wide">
+                  Flag False Alarm Protocol
+                </h3>
+              </div>
+              <button onClick={() => setFalseAlarmModalAlert(null)} className="text-[#8899A6] hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-[#070D18] border border-[#162238] rounded-lg p-3 text-xs font-mono space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[#8899A6]">Alert Identifier:</span>
+                  <span className="text-amber-400 font-bold">{falseAlarmModalAlert.alert_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8899A6]">Location:</span>
+                  <span className="text-white">{falseAlarmModalAlert.site_id} • {falseAlarmModalAlert.zone_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8899A6]">Auditor:</span>
+                  <span className="text-cyan-400 font-bold">{activeOperator.name} ({activeOperator.roleLabel})</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#8899A6] mb-1">
+                  Root Cause / Geotechnical Reason:
+                </label>
+                <select
+                  value={falseAlarmReason}
+                  onChange={(e) => setFalseAlarmReason(e.target.value)}
+                  className="w-full bg-[#070D18] border border-[#162238] rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="Heavy blasting vibration artifact">Heavy blasting vibration artifact</option>
+                  <option value="Sensor maintenance / recalibration in progress">Sensor maintenance / recalibration in progress</option>
+                  <option value="Transient LoRa multipath reflection">Transient LoRa multipath reflection</option>
+                  <option value="Environmental thermal expansion anomaly">Environmental thermal expansion anomaly</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#8899A6] mb-1">
+                  Audit Investigation Notes:
+                </label>
+                <textarea
+                  value={falseAlarmNotes}
+                  onChange={(e) => setFalseAlarmNotes(e.target.value)}
+                  rows={2}
+                  className="w-full bg-[#070D18] border border-[#162238] rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  placeholder="Provide geotechnical rationale for flagging this alert as false alarm..."
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleConfirmFalseAlarm}
+                  className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Submit False Alarm Audit Record</span>
+                </button>
+                <button
+                  onClick={() => setFalseAlarmModalAlert(null)}
+                  className="px-4 py-2.5 rounded-lg bg-[#162238] text-[#8899A6] hover:text-white text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

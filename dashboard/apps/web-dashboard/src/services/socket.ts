@@ -111,7 +111,9 @@ export class WebSocketService {
 
     this.isConnecting = true;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
+    const host = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      ? `${window.location.hostname}:3001`
+      : window.location.host;
     const url = `${protocol}//${host}/ws/live?tenant_id=${tenantId}&site_id=${siteId}&user_id=${userId}`;
 
     this.socket = new WebSocket(url);

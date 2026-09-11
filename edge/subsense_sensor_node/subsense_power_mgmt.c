@@ -6,8 +6,8 @@
 #include "subsense_power_mgmt.h"
 
 #ifdef ESP_PLATFORM
-#include "esp_sleep.h"
-#include "esp_log.h"
+#include <esp_sleep.h>
+#include <esp_log.h>
 #else
 #include <stdio.h>
 #endif

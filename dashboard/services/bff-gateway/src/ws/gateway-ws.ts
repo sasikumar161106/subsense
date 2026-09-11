@@ -26,8 +26,8 @@ export class GatewayWebSocketServer {
       this.broadcastAlert(eventType, alert);
     });
 
-    fastify.get("/ws/live", { websocket: true }, (connection: any, req) => {
-      const socket = connection.socket;
+    fastify.get("/ws/live", { websocket: true }, (rawConnection: any, req) => {
+      const socket = rawConnection.socket || rawConnection;
       const query = req.query as any;
       const tenantId = query.tenant_id || "OPCO-ECL-01";
       const siteId = query.site_id || "PANEL7-JHARIA";
@@ -102,19 +102,8 @@ export class GatewayWebSocketServer {
 
       const now = new Date().toISOString();
       const nodes = [
-        {
-          id: "SS-PANEL7-N042",
-          tilt: 0.183 + (Math.random() - 0.5) * 0.006,
-          vib: 1.42 + (Math.random() - 0.5) * 0.1,
-          disp: 3.70 + (Math.random() - 0.5) * 0.05,
-          crack: 0.02,
-          anomaly: 0.86,
-          battery: 78,
-          rssi: -71,
-          hops: 3,
-          maint: 21,
-          isStale: false,
-        },
+        // Note: SS-PANEL7-N042 is the REAL physical hardware ESP32 node,
+        // so it is exclusively broadcasted from real gateway telemetry, not mocked!
         {
           id: "SS-PANEL7-N043",
           tilt: 0.125 + (Math.random() - 0.5) * 0.004,

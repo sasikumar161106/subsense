@@ -24,15 +24,17 @@ build/
 # Database & temp
 *.sqlite
 *.sqlite3
+*.db
 *.log
 *.tmp
+*.bin
 .DS_Store
 Thumbs.db
 data/cache/
 data/tiles/tenant_*
 scratch/
 Tinyml model/
+new dasboard/
 
 ai-ml/data/
 *.zip
-

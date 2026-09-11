@@ -2,6 +2,7 @@ import React from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTenant } from "../contexts/TenantContext";
 import { UserRole, ROLE_DEFINITIONS } from "@subsense/shared";
+import { SubSenseLogo } from "./SubSenseLogo";
 import {
   Radio,
   Search,
@@ -30,9 +31,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     <header className="bg-slate-950/95 backdrop-blur border-b border-slate-800/80 px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-40 select-none">
       {/* Left: SubSense Brand & Subtitle */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 via-amber-500 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <Radio className="w-4 h-4 text-slate-950 animate-pulse" />
-        </div>
+        <SubSenseLogo size="sm" />
         <div>
           <div className="flex items-center gap-2">
             <span className="font-bold tracking-tight text-white font-mono text-base">
