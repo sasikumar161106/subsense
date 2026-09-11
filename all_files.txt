@@ -1,0 +1,636 @@
+﻿C:\Users\sasik\Desktop\SIH 2026\Subsense\.gitignore
+C:\Users\sasik\Desktop\SIH 2026\Subsense\docker-compose.yml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\JUDGE_PITCH_SCRIPT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\LICENSE
+C:\Users\sasik\Desktop\SIH 2026\Subsense\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\start_subsense_services.ps1
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\.coverage
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\DECISIONS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\Dockerfile
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\mesh_corroboration.obj
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\reconnection_sync.obj
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\REPO_DETAILS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\requirements.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\spiffs_circular_buffer.obj
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\subsense_edge_tinyml.obj
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\test_firmware.obj
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\active_learning\feedback_api.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\active_learning\negative_mining.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\active_learning\validation_gate.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\active_learning\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\cold_start\bootstrap_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\cold_start\cluster_partitioning.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\cold_start\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\config\mine_geometry.geojson
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\config\physical_bounds.yaml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\config\site_config.yaml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\correlation\engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\correlation\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\dags\weekly_subsense_retraining.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\data\telemetry.db
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\docs\ARCHITECTURE_PHASE3.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\docs\DEPLOYMENT_RUNBOOK.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\docs\DGMS_COMPLIANCE_PACKET.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\docs\GEOLOGY_CLUSTER_ASSIGNMENT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\distillation\distill.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\mesh_corroboration.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\mesh_corroboration.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\reconnection_sync.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\reconnection_sync.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\spiffs_circular_buffer.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\spiffs_circular_buffer.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\subsense_edge_tinyml.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\subsense_edge_tinyml.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\firmware\subsense_tinyml_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\hil_harness\hil_benchmark.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\hil_harness\test_firmware.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\edge_firmware\hil_harness\test_firmware.exe
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\explainability\alert_schema.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\explainability\attention_extractor.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\explainability\shap_explainer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\explainability\summary_generator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\explainability\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\features\constants.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\features\geometry_loader.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\features\pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\features\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\forecasting\calibration.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\forecasting\lstm_model.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\forecasting\trend_classifier.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\forecasting\ttc.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\forecasting\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\fusion\confidence.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\fusion\decision_engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\fusion\schemas.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\fusion\spatial_blend.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\fusion\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\geostatistics\drift.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\geostatistics\raster_exporter.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\geostatistics\universal_kriging.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\geostatistics\variogram.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\geostatistics\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\gnn\ablation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\gnn\gatv2_model.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\gnn\mesh_graph.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\gnn\synthetic_fea_generator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\gnn\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\governance\audit_ledger.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\governance\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\canonical_schema.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\qos_tracker.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\schema.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\telemetry_store.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\validator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\ingestion\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\insar\divergence.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\insar\slc_ingestion.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\insar\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\integration\alert_dispatcher.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\integration\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\logs\dgms_audit_trail.jsonl
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\logs\kriging_mine_risk_surface.geojson
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\logs\kriging_mine_risk_surface.tif
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\autoencoder.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\ensemble.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\isoforest.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\relocation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\retrain.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\anomaly\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\serving\app.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\serving\event_schema.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\serving\structured_logger.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\models\serving\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\reports\generate_phase2_report.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\reports\PHASE2_BENCHMARK_REPORT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\reports\PRODUCTION_VERIFICATION_REPORT.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\reports\PRODUCTION_VERIFICATION_REPORT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\scratch\test_gw.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\scratch\test_node.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\scripts\calibrate_confidence_weights.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\scripts\run_production_evaluation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_active_learning_gate.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_anomaly_ensemble.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_audit_ledger_tamper.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_canonical_ingest.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_cold_start_partitioning.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_correlation_engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_downstream_dispatch.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_edge_parity.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_edge_sync.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_event_publishing.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_explainability_gate.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_feature_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_fusion_engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_gnn_mesh_correlation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_gyro_only_scoring.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_ingestion_validation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_insar_divergence.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_kriging_geostatistics.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_lstm_forecasting.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_phase1_integration.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_production_harness.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_serving_api.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_spatial_blending.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_system_integration_chaos.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\test_ttc_countdown.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\tests\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\verification\production_harness.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\ai-ml\verification\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\ARCHITECTURE.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\DEMO_SCRIPT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\REPO_DETAILS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\SubSense_Alerting_System_Technical_Document.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\.env
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\.env.example
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\docker-compose.yml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\Dockerfile
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\jest.config.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\package-lock.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\data\synthetic_slope_failure_curve.csv
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\prisma\dev.db
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\prisma\schema.prisma
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\prisma\migrations\0_init\migration.sql
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\app.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\server.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\routes\alerts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\routes\audit.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\routes\auth.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\routes\community.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\api\routes\webhooks.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\audit\logger.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\buffer.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\circuit-breaker.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\dispatcher.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\base.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\community-sms.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\dashboard.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\email.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\push.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\siren.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\sms.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\channels\adapters\voice.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\db\client.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\db\repository.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\models\types.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\actuators.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\classifier.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\deduplication.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\deescalation.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\dispatchers.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\escalation.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\explainability.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\idempotency.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\index.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\recalibration.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\reevaluation.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\rule-engine\spatial.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\scripts\historical-replay.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\scripts\load-test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\scripts\simulate-outage.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\security\auth.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\security\encryption.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\security\https.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\simulator\index.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\src\simulator\scenarios.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\api.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\channels.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\e2e-downstream-drill.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\explainability.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\feedback-retract.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\phase3-chaos.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\phase3-integration.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\phase3-unit.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\rule-engine.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\simulator.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\backend\tests\webhooks.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\.gitignore
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\.oxlintrc.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\Dockerfile
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\index.html
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\package-lock.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\tsconfig.app.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\tsconfig.node.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\vite.config.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\public\favicon.svg
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\public\icons.svg
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\App.css
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\App.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\index.css
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\main.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\types.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\assets\react.svg
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\assets\vite.svg
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\AlertDetailModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\Header.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\HistoricalLog.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\LiveFeed.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\Map.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\alerting\frontend\src\components\SirenBanner.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\DASHBOARD_FEATURES_AUDIT_REPORT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\Dockerfile.bff
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\Dockerfile.web
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\package-lock.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\index.html
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\postcss.config.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\tailwind.config.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\vite.config.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\App.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\index.css
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\main.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\AlertPriorityRegion.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\AudibleAckModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\FalseAlarmModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\GlobalHeader.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\JudgeDemoConsole.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\Layer5MapStub.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\LiveSensorTable.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\OledDisplayMirror.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\PrimaryNavigation.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\RoleAwareNav.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\SensorSummaryKpis.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\Sidebar.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\SiteContextHeader.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\SmsContactsModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\StalenessBadge.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\components\SubSenseLogo.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\contexts\AuthContext.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\contexts\TenantContext.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\services\api.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\services\socket.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\AdminProvisioningView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\AlertLogView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\ContractInspectorView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\GeotechTrendsView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\MeshHealthView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\OperationsCockpit.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\OperatorCockpit.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\RegulatorView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\apps\web-dashboard\src\views\SubSenseAnalyticsDashboard.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\index.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\contracts\alerts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\contracts\reports.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\contracts\telemetry.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\rbac\capabilities.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\rbac\roles.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\packages\shared\src\tenancy\types.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\sample\repo_content.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\vitest.config.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\app.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\server.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\alert-engine\alert-system-client.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\alert-engine\audit-ledger.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\alert-engine\escalation-timer.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\auth\mfa.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\auth\rbac-engine.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\auth\service.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\db\client.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\db\schema.sql
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\db\seed.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\notifications\contacts-store.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\notifications\dispatcher.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\notifications\quiet-hours.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\notifications\termux-sms.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\alerts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\auth.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\contracts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\mesh.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\provisioning.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\regulator.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\sms-contacts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\tenants.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\routes\trends.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\storage\tenant-s3.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\src\ws\gateway-ws.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\alert-system-proxy.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\auth-interop.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\contracts-and-lifecycle.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\rls-leakage.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\site-provisioning.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\dashboard\services\bff-gateway\tests\termux-sms.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\folder_contents.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\REPO_DETAILS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\SubSense_TinyML_Model_Technical_Document.docx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\benchmark.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\config.yaml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\metrics.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\model_inspection.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\requirements.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\robustness.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\run_evaluation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\threshold_analysis.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\benchmark_results.csv
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\comparison.csv
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\gateway_metrics.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\node_metrics.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\threshold_analysis.csv
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\evaluation\results\TINYML_EVALUATION_REPORT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_app.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_display.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_display.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_fallback.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_fallback.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_features.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_features.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_gateway_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_inference_engine.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_inference_engine.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_node_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_ota_manager.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_ota_manager.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_power_mgmt.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_power_mgmt.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_wifi_mesh.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\subsense_wifi_mesh.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\esp32_subsense_test.ino
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_display.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_display.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_fallback.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_fallback.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_features.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_features.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_gateway_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_inference_engine.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_inference_engine.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_node_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_ota_manager.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_ota_manager.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_power_mgmt.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_power_mgmt.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_wifi_mesh.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\firmware\esp32_subsense_test\subsense_wifi_mesh.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\feature_scaler.joblib
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\gateway_model_int8.tflite
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\gateway_rule_ensemble.joblib
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\gateway_student_autoencoder.pt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\node_model_int8.tflite
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\node_student_detector.pt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\phase2_compression_metadata.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\phase3_firmware_validation.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\pipeline_metadata.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\teacher_autoencoder.pt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\models\teacher_isolation_forest.joblib
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\scratch\test_gw.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\scratch\test_node.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\scripts\test_esp32_hardware.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\data_generator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\export_embedded.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\feature_extractor.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\fixed_point_engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\quantizer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\run_compression_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\student_models.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\teacher_models.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\train_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\validate_firmware_and_reconcile.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_gateway_node\subsense_gateway_node.ino
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_gateway_node\subsense_wifi_mesh.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_gateway_node\subsense_wifi_mesh.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_relay_node\subsense_relay_node.ino
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_relay_node\subsense_relay_node_standalone.ino
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_relay_node\subsense_wifi_mesh.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_relay_node\subsense_wifi_mesh.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_display.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_display.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_fallback.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_fallback.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_features.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_features.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_gateway_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_inference_engine.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_inference_engine.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_node_model.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_power_mgmt.c
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_power_mgmt.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_sensor_node.ino
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_wifi_mesh.cpp
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\subsense_sensor_node\subsense_wifi_mesh.h
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\tests\test_firmware_logic.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\tests\test_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\edge\tests\test_quantization.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gateway-bridge\bridge.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gateway-bridge\Dockerfile
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gateway-bridge\offline_queue.db
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gateway-bridge\requirements.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gateway-bridge\tests\test_bridge.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\.gitignore
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\docker-compose.yml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\Dockerfile
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\pyproject.toml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\REPO_DETAILS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\requirements.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\config\settings.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\config\sites_crs_registry.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\main.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_digital_twin.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_insar.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_raster.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_replay.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_stream.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_tiles.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\api\router_zones.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\delivery\postgis_repository.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\delivery\tile_cache.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\digital_twin\cross_section.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\digital_twin\dem_draper.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\digital_twin\dgms_exporter.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\digital_twin\subsurface_mesh.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\digital_twin\vertical_exaggeration.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\heatmap\color_ramp.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\heatmap\staleness_decorator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\heatmap\tile_slicer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\heatmap\variance_mask.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\insar\discrepancy_engine.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\insar\insar_decomposition.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\insar\insar_overlay.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\normalizer\affine_georeferencer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\normalizer\cad_parser.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\normalizer\crs_normalizer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\risk_zones\contour_extractor.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\risk_zones\polygon_smoother.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\risk_zones\zone_tracker.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\schemas\digital_twin_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\schemas\heatmap_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\schemas\insar_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\schemas\risk_zone_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\schemas\whatif_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\simulation\ncb_subsidence_model.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\simulation\replay_manager.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\src\simulation\whatif_scenario.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\benchmarks\test_performance_benchmarks.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\integration\test_api_endpoints.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\integration\test_enhancements.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\integration\test_raster_ingest.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\integration\test_web_dashboard.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_affine_georeferencer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_cad_parser.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_color_ramp.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_contour_and_zone_tracker.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_crs_normalizer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\tests\unit\test_digital_twin_and_insar.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\web\index.html
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\web\src\app.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\gis\web\styles\dashboard.css
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\package-lock.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\index.html
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\postcss.config.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\tailwind.config.js
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\vite.config.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\App.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\index.css
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\main.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\AlertPriorityRegion.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\AudibleAckModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\FalseAlarmModal.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\GlobalHeader.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\Layer5MapStub.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\LiveSensorTable.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\PrimaryNavigation.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\RoleAwareNav.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\SensorSummaryKpis.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\Sidebar.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\SiteContextHeader.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\StalenessBadge.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\components\SubSenseLogo.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\contexts\AuthContext.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\contexts\TenantContext.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\services\api.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\services\socket.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\AdminProvisioningView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\AlertLogView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\ContractInspectorView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\GeotechTrendsView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\MeshHealthView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\OperationsCockpit.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\OperatorCockpit.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\RegulatorView.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\apps\web-dashboard\src\views\SubSenseAnalyticsDashboard.tsx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\index.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\contracts\alerts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\contracts\reports.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\contracts\telemetry.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\rbac\capabilities.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\rbac\roles.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\packages\shared\src\tenancy\types.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\report\DASHBOARD_FEATURES_AUDIT_REPORT.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\sample\repo_content.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\package.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\tsconfig.json
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\vitest.config.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\app.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\server.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\alert-engine\audit-ledger.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\alert-engine\escalation-timer.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\auth\mfa.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\auth\rbac-engine.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\auth\service.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\db\client.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\db\schema.sql
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\db\seed.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\notifications\dispatcher.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\notifications\quiet-hours.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\alerts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\auth.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\contracts.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\mesh.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\provisioning.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\regulator.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\tenants.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\routes\trends.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\storage\tenant-s3.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\src\ws\gateway-ws.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\tests\contracts-and-lifecycle.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\tests\rls-leakage.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\new dasboard\services\bff-gateway\tests\site-provisioning.test.ts
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\docx_full_content.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\pyproject.toml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\README.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\REPO_DETAILS.md
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\requirements.txt
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\SubSense_AIML_Data_Inference_Layer_Technical_Document.docx
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\config\default_config.yaml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\config\site_configs\SITE-JHARIA-04.yaml
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\data\synthetic_generator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\main.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\router_feedback.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\router_inference.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\router_insar.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\router_kriging.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\api\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\explainability\confidence_scorer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\explainability\narrative_generator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\explainability\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\feedback_loop\feedback_consumer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\feedback_loop\model_registry.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\feedback_loop\online_calibrator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\feedback_loop\retraining_orchestrator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\feedback_loop\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\geostats\ordinary_kriging.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\geostats\variogram.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\geostats\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\ingestion\fault_filter.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\ingestion\feature_extractor.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\ingestion\window_buffer.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\ingestion\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\insar\insar_cross_validator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\insar\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\anomaly_ensemble.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\autoencoder_detector.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\isolation_forest_detector.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\lstm_forecaster.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\mesh_gnn_correlator.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\models\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\pipeline\inference_pipeline.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\pipeline\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\feedback_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\gis_interop_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\insar_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\risk_event_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\sensor_contracts.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\schemas\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\tinyml_bridge\distillation_exporter.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\tinyml_bridge\edge_reconciler.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\src\tinyml_bridge\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_anomaly_ensemble.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_api_endpoints.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_explainability.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_feedback_loop.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_gis_integration.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_gnn_correlation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_ingestion_and_faults.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_insar_cross_validation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_kriging_interpolation.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_lstm_forecasting.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_robustness_and_edge_cases.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_sla_latency_benchmark.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\test_tinyml_bridge.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\reference_aiml\tests\__init__.py
+C:\Users\sasik\Desktop\SIH 2026\Subsense\tests\test_e2e_hardware_drill.py
