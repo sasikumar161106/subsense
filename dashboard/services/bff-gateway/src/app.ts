@@ -10,6 +10,7 @@ import { trendsRoutes } from "./routes/trends";
 import { meshRoutes } from "./routes/mesh";
 import { tenantsRoutes } from "./routes/tenants";
 import { regulatorRoutes } from "./routes/regulator";
+import { smsContactsRoutes } from "./routes/sms-contacts";
 import { verifyUserToken } from "./auth/service";
 import { GatewayWebSocketServer } from "./ws/gateway-ws";
 import { seedDatabase } from "./db/seed";
@@ -79,6 +80,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(meshRoutes);
   await app.register(tenantsRoutes);
   await app.register(regulatorRoutes);
+  await app.register(smsContactsRoutes);
 
   // Health check endpoint
   app.get("/health", async () => {

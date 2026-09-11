@@ -1,6 +1,8 @@
 import { AlertLifecycleEvent, AlertSeverity } from "@subsense/shared";
 import { AuditLedger } from "../alert-engine/audit-ledger";
 import { isNotificationSilencedByQuietHours, QuietHoursConfig } from "./quiet-hours";
+import { TermuxSmsService } from "./termux-sms";
+import { EmergencyContactsStore } from "./contacts-store";
 
 export interface DispatchResult {
   channel: "browser_push" | "mobile_push_fcm" | "sms_twilio" | "physical_siren_relay";
@@ -77,21 +79,36 @@ export class NotificationDispatcher {
       this.simulatedDispatches.push(res);
     }
 
-    // 3. Channel: SMS & Voice Alerts (Twilio / telecom gateway)
+    // 3. Channel: SMS & Voice Alerts (Termux SSH SMS + Telecom Gateway)
     // Dispatched for Warning and Critical alerts
     if (alert.severity === "warning" || alert.severity === "critical") {
       if (!quietHoursCheck.silenced || alert.severity === "critical") {
+        const activeContacts = EmergencyContactsStore.getActive();
+        const contactPhones = activeContacts.map((c) => `${c.name} (${c.phoneNumber})`).join(", ");
+
+        // Asynchronously trigger Termux SMS broadcast to all active contacts
+        TermuxSmsService.broadcastAlertSms(
+          activeContacts.map((c) => ({ name: c.name, phoneNumber: c.phoneNumber })),
+          alert
+        ).catch((err) => {
+          console.error(`[DISPATCHER] Termux SMS broadcast failed: ${err.message}`);
+        });
+
         const res: DispatchResult = {
           channel: "sms_twilio",
           delivered: true,
           timestamp: new Date().toISOString(),
-          details: `Automated SMS/Voice broadcast sent to mine safety managers (+91 98000 12345). Critical override: ${alert.severity === "critical"}`,
+          details: `Termux SMS broadcast triggered to ${activeContacts.length} emergency contacts [${contactPhones || "None configured"}]. Critical override: ${alert.severity === "critical"}`,
         };
         res.auditHash = await AuditLedger.record({
           tenantId: alert.tenant_id,
           userId: "SYSTEM_DISPATCHER",
           action: "NOTIFICATION_DISPATCH_SMS",
-          details: { alertId: alert.alert_id, severity: alert.severity, phone: "+91 98000 12345" },
+          details: {
+            alertId: alert.alert_id,
+            severity: alert.severity,
+            recipients: activeContacts.map((c) => c.phoneNumber),
+          },
         });
         results.push(res);
         this.simulatedDispatches.push(res);

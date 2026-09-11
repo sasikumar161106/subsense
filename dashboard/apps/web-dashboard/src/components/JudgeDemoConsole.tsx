@@ -14,6 +14,7 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Phone,
 } from "lucide-react";
 
 export interface JudgeDemoConsoleProps {
@@ -29,6 +30,8 @@ export interface JudgeDemoConsoleProps {
   onSilenceSiren: () => void;
   onToggleOledMirror: () => void;
   showOledMirror: boolean;
+  onOpenSmsContacts?: () => void;
+  activeSmsCount?: number;
 }
 
 export const JudgeDemoConsole: React.FC<JudgeDemoConsoleProps> = ({
@@ -44,6 +47,8 @@ export const JudgeDemoConsole: React.FC<JudgeDemoConsoleProps> = ({
   onSilenceSiren,
   onToggleOledMirror,
   showOledMirror,
+  onOpenSmsContacts,
+  activeSmsCount,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
@@ -118,8 +123,20 @@ export const JudgeDemoConsole: React.FC<JudgeDemoConsoleProps> = ({
             }`}
           >
             <Tv className="w-3.5 h-3.5" />
-            <span>{showOledMirror ? "Hide OLED Mirror" : "Show OLED Mirror"}</span>
+            <span>{showOledMirror ? "Hide OLED" : "Show OLED"}</span>
           </button>
+
+          {/* Emergency SMS Broadcast List Button */}
+          {onOpenSmsContacts && (
+            <button
+              onClick={onOpenSmsContacts}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all bg-purple-950/80 hover:bg-purple-900/90 text-purple-200 border border-purple-600/60 shadow-sm hover:border-purple-400"
+              title="Manage emergency phone numbers receiving real Termux SMS alerts"
+            >
+              <Phone className="w-3.5 h-3.5 text-purple-400" />
+              <span>SMS List {activeSmsCount !== undefined ? `(${activeSmsCount})` : ""}</span>
+            </button>
+          )}
         </div>
 
         {/* Right: Controls & Siren Mute */}

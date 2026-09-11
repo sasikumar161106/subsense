@@ -8,6 +8,8 @@ export const smsCircuitBreaker = new CircuitBreaker('SMS_GATEWAY', {
   cooldownPeriodMs: 15000
 });
 
+import { exec } from 'child_process';
+
 export class PrimarySmsAdapter {
   async send(
     alert: AlertRecord,
@@ -20,6 +22,23 @@ export class PrimarySmsAdapter {
         `[PRIMARY SMS GATEWAY] SIMULATE_SMS_OUTAGE is ACTIVE. Simulating 503 Gateway Outage to ${recipient}.`
       );
       throw new Error('503 Service Unavailable: Primary SMS Telecom Gateway Down');
+    }
+
+    // Termux SSH SMS dispatch if configured or recipient has standard international prefix
+    if (process.env.ENABLE_TERMUX_SMS !== 'false' && recipient.startsWith('+')) {
+      const sanitizedPhone = recipient.replace(/[^\d+]/g, '');
+      const msg = `[SubSense ${context?.isRetraction ? 'RETRACTION' : alert.severity.toUpperCase()}] Strata alert in ${alert.risk_zone_id}. Time: ${new Date().toLocaleTimeString('en-IN')}`;
+      const escapedMsg = msg.replace(/'/g, "'\\''");
+      const host = process.env.TERMUX_SSH_HOST || '127.0.0.1';
+      const port = process.env.TERMUX_SSH_PORT || '8022';
+      const cmd = `ssh -p ${port} -o StrictHostKeyChecking=no -o ConnectTimeout=6 ${host} "termux-sms-send -n ${sanitizedPhone} '${escapedMsg}'"`;
+      exec(cmd, { timeout: 10000 }, (err) => {
+        if (err) {
+          console.warn(`[TERMUX SMS GATEWAY] Termux dispatch to ${sanitizedPhone} failed: ${err.message}`);
+        } else {
+          console.log(`[TERMUX SMS GATEWAY] Sent real SMS to ${sanitizedPhone} via Termux on port ${port}`);
+        }
+      });
     }
 
     // Normal simulated transmission

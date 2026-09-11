@@ -8,6 +8,15 @@ Write-Host "=================================================================" -
 
 $WorkspaceRoot = $PSScriptRoot
 
+# 0. Ensure Android ADB Port 8022 is Forwarded for Termux SMS
+Write-Host "[0/5] Verifying Android ADB Port Forwarding (8022 -> 8022)..." -ForegroundColor Magenta
+try {
+    adb forward tcp:8022 tcp:8022 2>$null
+    Write-Host " ADB Port 8022: Active (Termux SMS Gateway)" -ForegroundColor Green
+} catch {
+    Write-Host " ADB warning: Ensure phone is plugged in with adb debugging active" -ForegroundColor Yellow
+}
+
 # 1. Start AI/ML Service (Port 8000)
 Write-Host "[1/5] Launching AI/ML Service on http://localhost:8000..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$WorkspaceRoot\ai-ml'; python -m uvicorn models.serving.app:app --host 0.0.0.0 --port 8000"
