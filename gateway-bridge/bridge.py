@@ -140,6 +140,8 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         rssi_dbm = int(rssi_dbm)
+        if rssi_dbm < -130 or rssi_dbm > 0:
+            rssi_dbm = -68
     except (ValueError, TypeError):
         rssi_dbm = -68
 

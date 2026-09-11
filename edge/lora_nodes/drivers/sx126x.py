@@ -295,7 +295,8 @@ class sx126x:
             # If RSSI byte is enabled, the E22 module appends 1 byte at the end of the RF packet
             if self.rssi and len(r_buff) >= 2:
                 raw_rssi = r_buff[-1]
-                rssi_val = -(256 - raw_rssi)
+                calc_rssi = -(256 - raw_rssi)
+                rssi_val = calc_rssi if -130 <= calc_rssi <= 0 else None
                 msg_data = bytes(r_buff[:-1])
             else:
                 rssi_val = None

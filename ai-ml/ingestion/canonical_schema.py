@@ -77,10 +77,29 @@ def to_raw_sensor_record(canonical: CanonicalSensorReading) -> RawSensorRecord:
         crack_index=canonical.readings.crack_index,
     )
 
+    # Sanitize and clamp health parameters to valid physical bounds for NodeHealthData
+    raw_rssi = canonical.node_health.rssi_dbm
+    if raw_rssi is None or raw_rssi < -130.0 or raw_rssi > 0.0:
+        clean_rssi = -68.0
+    else:
+        clean_rssi = float(raw_rssi)
+
+    raw_bat = canonical.node_health.battery_percent
+    if raw_bat is None or raw_bat < 0.0 or raw_bat > 100.0:
+        clean_bat = 94.0
+    else:
+        clean_bat = float(raw_bat)
+
+    raw_hop = canonical.node_health.hop_count
+    if raw_hop is None or raw_hop < 0 or raw_hop > 15:
+        clean_hop = 1
+    else:
+        clean_hop = int(raw_hop)
+
     health = NodeHealthData(
-        battery_pct=float(canonical.node_health.battery_percent or 94.0),
-        rssi_dbm=float(canonical.node_health.rssi_dbm or -68.0),
-        hop_count=int(canonical.node_health.hop_count or 1),
+        battery_pct=clean_bat,
+        rssi_dbm=clean_rssi,
+        hop_count=clean_hop,
     )
 
     ts = canonical.timestamp
