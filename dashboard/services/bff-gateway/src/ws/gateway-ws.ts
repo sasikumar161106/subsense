@@ -176,8 +176,7 @@ export class GatewayWebSocketServer {
           if (
             client?.socket &&
             client.socket.readyState === 1 &&
-            client.tenantId === "OPCO-ECL-01" &&
-            client.siteId === "PANEL7-JHARIA"
+            (client.userId?.startsWith("USR-REG") || (client.tenantId === record.tenant_id && client.siteId === record.site_id))
           ) {
             try {
               client.socket.send(payload);
@@ -198,10 +197,16 @@ export class GatewayWebSocketServer {
 
     for (const client of this.clients) {
       if (client?.socket && client.socket.readyState === 1) {
-        try {
-          client.socket.send(payload);
-        } catch {
-          // ignore closed socket
+        if (
+          client.userId?.startsWith("USR-REG") ||
+          !record?.tenant_id ||
+          (client.tenantId === record.tenant_id && (!record.site_id || client.siteId === record.site_id))
+        ) {
+          try {
+            client.socket.send(payload);
+          } catch {
+            // ignore closed socket
+          }
         }
       }
     }

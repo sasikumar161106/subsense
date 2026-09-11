@@ -42,8 +42,11 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       const user = res.rows[0];
 
       // Verify MFA if mfaCode is passed or required
-      const mfaValid = mfaCode ? verifyMfaToken(mfaCode, user.mfa_secret) : true;
-      if (mfaCode && !mfaValid) {
+      if (user.mfa_enabled) {
+        if (!mfaCode || !verifyMfaToken(mfaCode, user.mfa_secret)) {
+          return reply.status(400).send({ error: "MFA code is required and must be valid" });
+        }
+      } else if (mfaCode && !verifyMfaToken(mfaCode, user.mfa_secret)) {
         return reply.status(400).send({ error: "Invalid MFA verification token" });
       }
 

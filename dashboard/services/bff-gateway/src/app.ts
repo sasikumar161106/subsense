@@ -45,8 +45,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       if (session) {
         (request as any).userSession = session;
       }
-    } else {
-      // Support tenant header or test role header for developer convenience
+    } else if (process.env.NODE_ENV === "test") {
+      // Support tenant header or test role header for developer convenience in automated test suites
       const roleHeader = request.headers["x-user-role"] as string;
       const tenantHeader = request.headers["x-tenant-id"] as string;
       const userHeader = request.headers["x-user-id"] as string;

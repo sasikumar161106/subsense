@@ -91,40 +91,40 @@ def run_hardware_test(port_name, baud=115200, timeout=10.0):
                 raw_lines.append(line)
                 if "Enter command [1-7]:" in line:
                     break
+
+        print("\n--- Automated Command Test: Full Pipeline & JSON Serialization ---")
+        time.sleep(0.5)
+        ser.write(b"3\n")
+        time.sleep(1.0)
+
+        json_lines = []
+        collecting_json = False
+        brace_depth = 0
+        deadline = time.time() + 5.0
+
+        while time.time() < deadline:
+            line = ser.readline().decode("utf-8", errors="replace").strip()
+            if line:
+                print(f"  [ESP32] {line}")
+                for ch in line:
+                    if ch == "{":
+                        if not collecting_json:
+                            collecting_json = True
+                            brace_depth = 1
+                        else:
+                            brace_depth += 1
+                    elif ch == "}":
+                        if collecting_json:
+                            brace_depth -= 1
+                if collecting_json:
+                    json_lines.append(line)
+                    if brace_depth == 0:
+                        collecting_json = False
+                        break
     except KeyboardInterrupt:
         print("\n[!] User interrupted.")
-
-    print("\n--- Automated Command Test: Full Pipeline & JSON Serialization ---")
-    time.sleep(0.5)
-    ser.write(b"3\n")
-    time.sleep(1.0)
-
-    json_lines = []
-    collecting_json = False
-    brace_depth = 0
-    deadline = time.time() + 5.0
-
-    while time.time() < deadline:
-        line = ser.readline().decode("utf-8", errors="replace").strip()
-        if line:
-            print(f"  [ESP32] {line}")
-            for ch in line:
-                if ch == "{":
-                    if not collecting_json:
-                        collecting_json = True
-                        brace_depth = 1
-                    else:
-                        brace_depth += 1
-                elif ch == "}":
-                    if collecting_json:
-                        brace_depth -= 1
-            if collecting_json:
-                json_lines.append(line)
-                if brace_depth == 0:
-                    collecting_json = False
-                    break
-
-    ser.close()
+    finally:
+        ser.close()
 
     if json_lines:
         json_str = "\n".join(json_lines)

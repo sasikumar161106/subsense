@@ -239,19 +239,33 @@ class LoRaGatewayNode:
         except KeyboardInterrupt:
             print(f"\n\n[GATEWAY] Shutting down. Total: {self.total_received}, Dispatched: {self.total_dispatched}")
         finally:
+            self._dispatch_running = False
+            self.dispatch_queue.put(None)
+            if hasattr(self, "_dispatch_thread") and self._dispatch_thread.is_alive():
+                self._dispatch_thread.join(timeout=2.0)
             self.bridge.stop()
             if self.lora:
                 self.lora.close()
 
 
-def run_gateway(port: Optional[str] = None):
+def run_gateway(
+    port: Optional[str] = None,
+    freq: Optional[int] = None,
+    ingest_url: Optional[str] = None,
+    bff_url: Optional[str] = None,
+):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] [GATEWAY-NODE] %(message)s",
         datefmt="%H:%M:%S",
         force=True,
     )
-    gw = LoRaGatewayNode(port=port or SERIAL_PORT)
+    gw = LoRaGatewayNode(
+        port=port or SERIAL_PORT,
+        freq=freq or LORA_SETTINGS["FREQUENCY"],
+        ingest_url=ingest_url or AIML_INGEST_URL,
+        bff_url=bff_url or BFF_BROADCAST_URL,
+    )
     gw.run()
 
 

@@ -191,7 +191,7 @@ export const LiveSensorTable: React.FC<LiveSensorTableProps> = ({
               const isSelected = selectedNodeId === row.nodeId;
               const anomalyPct = Math.round(row.anomalyScore * 100);
               const isCritical = row.anomalyScore > 0.75;
-              const isWarning = row.tilt > 0.15 || row.displacement > 2.5;
+              const isWarning = row.tilt > 0.15 || (row.displacement !== null && row.displacement > 2.5);
 
               return (
                 <tr
@@ -239,14 +239,18 @@ export const LiveSensorTable: React.FC<LiveSensorTableProps> = ({
 
                   {/* Displacement */}
                   <td className="py-3 px-3 text-right">
-                    <span className={row.displacement > 3.0 ? "text-red-400 font-bold animate-pulse" : "text-slate-300"}>
-                      {row.displacement.toFixed(2)}
-                    </span>
+                    {row.displacement != null ? (
+                      <span className={row.displacement > 3.0 ? "text-red-400 font-bold animate-pulse" : "text-slate-300"}>
+                        {row.displacement.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 font-mono text-xs">--</span>
+                    )}
                   </td>
 
                   {/* Crack Index */}
                   <td className="py-3 px-3 text-right text-slate-400">
-                    {row.crackIndex.toFixed(3)}
+                    {row.crackIndex != null ? row.crackIndex.toFixed(3) : <span className="text-slate-500">--</span>}
                   </td>
 
                   {/* Anomaly Score */}

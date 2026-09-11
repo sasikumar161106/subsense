@@ -124,7 +124,11 @@ class LoRaRelayNode:
 
         node_id = data.get("node_id") or data.get("node") or "UNKNOWN"
         seq = data.get("seq", self.pings_received)
-        hop_count = int(data.get("hop_count", data.get("hops", 0)))
+        raw_hops = data.get("hop_count") if data.get("hop_count") is not None else data.get("hops")
+        try:
+            hop_count = int(raw_hops) if raw_hops is not None else 0
+        except (ValueError, TypeError):
+            hop_count = 0
 
         # Check loop / hop threshold
         if hop_count >= MAX_HOPS:
@@ -185,7 +189,11 @@ class LoRaRelayNode:
                 self.lora.close()
 
 
-def run_relay(relay_id: Optional[str] = None, port: Optional[str] = None):
+def run_relay(
+    relay_id: Optional[str] = None,
+    port: Optional[str] = None,
+    freq: Optional[int] = None,
+):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] [RELAY-NODE] %(message)s",
@@ -195,6 +203,7 @@ def run_relay(relay_id: Optional[str] = None, port: Optional[str] = None):
     node = LoRaRelayNode(
         relay_id=relay_id or DEFAULT_RELAY_ID,
         port=port or SERIAL_PORT,
+        freq=freq or LORA_SETTINGS["FREQUENCY"],
     )
     node.run()
 

@@ -67,6 +67,15 @@ export const OperationsCockpit: React.FC = () => {
     return unsub;
   }, [currentTenantId, currentSiteId, currentUser.userId]);
 
+  const totalCount = sensors.length;
+  const offlineCount = sensors.filter(
+    (s) => s.latest_telemetry?.is_stale || s.node.status !== "online"
+  ).length;
+  const atRiskCount = sensors.filter(
+    (s) => !s.latest_telemetry?.is_stale && (s.latest_telemetry?.anomaly_score || 0) > 0.35
+  ).length;
+  const healthyCount = Math.max(0, totalCount - offlineCount - atRiskCount);
+
   return (
     <div className="space-y-4">
       {/* Two-Column Industrial Main Grid */}
@@ -82,10 +91,10 @@ export const OperationsCockpit: React.FC = () => {
 
           {/* Under Sensor Table: 4 Compact KPI Cards */}
           <SensorSummaryKpis
-            totalNodes={24}
-            healthyNodes={21}
-            atRiskNodes={2}
-            offlineNodes={1}
+            totalNodes={totalCount}
+            healthyNodes={healthyCount}
+            atRiskNodes={atRiskCount}
+            offlineNodes={offlineCount}
           />
         </div>
 

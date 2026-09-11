@@ -43,7 +43,7 @@
 // ==============================================================================
 // Global System State & Buffers
 // ==============================================================================
-static SubSenseWindowBuffer     g_win_buf;
+RTC_DATA_ATTR static SubSenseWindowBuffer g_win_buf;
 static SubSenseHealthTelemetry  g_health;
 static SubSenseFeatureConfig    g_feat_config;
 static SubSenseInferenceConfig  g_node_config;
@@ -341,8 +341,8 @@ void loop() {
     disp_data.tilt_deg        = tilt;
     disp_data.vibration_rms   = vib;
     disp_data.anomaly_score   = event.anomaly_score;
-    disp_data.battery_percent = 94; // LiFePO4 battery charge state
-    disp_data.rssi_dbm        = -68;
+    disp_data.battery_percent = g_health.battery_percent > 0 ? g_health.battery_percent : 94; // LiFePO4 battery charge state
+    disp_data.rssi_dbm        = g_health.rssi_dbm != 0 ? g_health.rssi_dbm : -68;
     disp_data.hop_count       = 0;
     disp_data.packets_sent    = g_packet_counter;
     disp_data.uptime_seconds  = millis() / 1000;

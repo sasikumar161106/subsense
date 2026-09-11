@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
+import crypto from "crypto";
 import { DgmsReportRequestPayloadSchema } from "@subsense/shared";
 import { withTenantScope, withSystemScope } from "../db/client";
 import { UserSession } from "../auth/service";
@@ -129,7 +130,8 @@ export const regulatorRoutes: FastifyPluginAsync = async (fastify) => {
     );
 
     const generatedAt = new Date().toISOString();
-    const hashSignature = `SHA256-${Date.now().toString(16)}-${Math.random().toString(36).substring(2, 9)}`;
+    const reportDigestSource = `${reportId}:${req.tenant_id}:${req.site_id}:${generatedAt}:${s3Key}`;
+    const hashSignature = `SHA256-${crypto.createHash("sha256").update(reportDigestSource).digest("hex")}`;
 
     // Save to database
     await withTenantScope(

@@ -3,8 +3,8 @@ import { z } from "zod";
 export const NodeReadingsSchema = z.object({
   tilt_deg: z.number().describe("Tilt angle measured in degrees"),
   vibration_rms_mm_s: z.number().describe("Vibration root mean square in mm/s"),
-  displacement_mm: z.number().describe("Extensometer subsidence displacement in mm"),
-  crack_index: z.number().min(0).max(1).describe("Normalized crack propagation index (0 to 1)"),
+  displacement_mm: z.number().nullable().describe("Extensometer subsidence displacement in mm"),
+  crack_index: z.number().min(0).max(1).nullable().describe("Normalized crack propagation index (0 to 1)"),
 });
 
 export const NodeHealthSchema = z.object({

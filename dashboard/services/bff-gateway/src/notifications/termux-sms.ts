@@ -69,14 +69,19 @@ export class TermuxSmsService {
     const isWindows = process.platform === "win32";
     const scriptPath = path.join(
       os.tmpdir(),
-      isWindows ? "subsense_askpass.bat" : "subsense_askpass.sh"
+      isWindows ? `subsense_askpass_${process.pid}_${Date.now()}.bat` : `subsense_askpass_${process.pid}_${Date.now()}.sh`
     );
 
-    const scriptContent = isWindows
-      ? `@echo ${this.password}\r\n`
-      : `#!/bin/sh\necho "${this.password}"\n`;
+    // Escape special metacharacters in password safely
+    const safePassword = isWindows
+      ? this.password.replace(/[\^&|<>%"]/g, "^$&")
+      : this.password.replace(/["\\$`]/g, "\\$&");
 
-    fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
+    const scriptContent = isWindows
+      ? `@echo ${safePassword}\r\n`
+      : `#!/bin/sh\necho "${safePassword}"\n`;
+
+    fs.writeFileSync(scriptPath, scriptContent, { mode: 0o700 });
     return scriptPath;
   }
 
@@ -123,6 +128,15 @@ export class TermuxSmsService {
 
     return new Promise((resolve) => {
       exec(cmd, { env, timeout: 20000 }, (err, stdout, stderr) => {
+        // Cleanup askpass script
+        try {
+          if (fs.existsSync(askpassScript)) {
+            fs.unlinkSync(askpassScript);
+          }
+        } catch {
+          // ignore cleanup error
+        }
+
         logEntry.durationMs = Date.now() - startTime;
         logEntry.output = (stdout + "\n" + stderr).trim();
 

@@ -133,8 +133,11 @@ size_t subsense_lora_sx126x_receive(uint8_t* out_buf, size_t max_len, int16_t* o
 
     if (s_rssi_enabled && actual_read >= 2) {
         uint8_t raw_rssi = temp_buf[actual_read - 1];
+        int16_t calc_rssi = -(int16_t)(256 - raw_rssi);
+        if (calc_rssi < -130) calc_rssi = -130;
+        if (calc_rssi > 0) calc_rssi = 0;
         if (out_rssi_dbm != NULL) {
-            *out_rssi_dbm = -(int16_t)(256 - raw_rssi);
+            *out_rssi_dbm = calc_rssi;
         }
         size_t payload_len = actual_read - 1;
         memcpy(out_buf, temp_buf, payload_len);

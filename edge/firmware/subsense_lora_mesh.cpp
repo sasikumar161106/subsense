@@ -45,6 +45,7 @@ typedef struct {
     uint8_t  chunks_received;
     uint8_t  total_chunks;
     uint16_t total_len;
+    uint16_t received_chunk_mask;
     uint32_t last_update_ms;
     int16_t  last_rssi_dbm;
     uint8_t  max_hop_seen;
@@ -104,6 +105,7 @@ static int allocate_slot(const uint8_t mac[6], uint8_t msg_id, uint16_t total_le
         s->chunks_received = 0;
         s->total_chunks = total_chunks;
         s->total_len = (total_len < SUBSENSE_MESH_MAX_PAYLOAD_LEN) ? total_len : (SUBSENSE_MESH_MAX_PAYLOAD_LEN - 1);
+        s->received_chunk_mask = 0;
         s->last_update_ms = millis();
         s->last_rssi_dbm = -70;
         s->max_hop_seen = 0;
@@ -169,10 +171,14 @@ static void handle_gateway_packet(const SubSenseLoraMeshPacket* pkt, int16_t rss
         s->max_hop_seen = pkt->hop_count;
     }
 
+    uint16_t chunk_bit = (1U << (pkt->chunk_index & 0x0F));
     size_t offset = (size_t)pkt->chunk_index * SUBSENSE_LORA_FRAG_CHUNK_LEN;
-    if (offset + pkt->chunk_len <= sizeof(s->buffer) - 1) {
-        memcpy(&s->buffer[offset], pkt->payload, pkt->chunk_len);
-        s->chunks_received++;
+    if ((s->received_chunk_mask & chunk_bit) == 0) {
+        if (offset + pkt->chunk_len <= sizeof(s->buffer) - 1) {
+            memcpy(&s->buffer[offset], pkt->payload, pkt->chunk_len);
+            s->received_chunk_mask |= chunk_bit;
+            s->chunks_received++;
+        }
     }
 
     // Complete reassembly check

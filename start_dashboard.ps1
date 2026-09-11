@@ -12,7 +12,14 @@ $WorkspaceRoot = $PSScriptRoot
 Write-Host "[1/2] Launching BFF Gateway on http://localhost:3001..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$WorkspaceRoot\dashboard'; npm run dev:bff"
 
-# 2. Start Web Dashboard (Port 5174)
+# 2. Build Web Dashboard if dist is missing, then Start Web Dashboard (Port 5174)
+if (-not (Test-Path "$WorkspaceRoot\dashboard\apps\web-dashboard\dist")) {
+    Write-Host "[2/2] Building Web Dashboard production assets..." -ForegroundColor Yellow
+    Push-Location "$WorkspaceRoot\dashboard"
+    npm --workspace=packages/shared run build
+    npm --workspace=apps/web-dashboard run build
+    Pop-Location
+}
 Write-Host "[2/2] Launching Web Dashboard on http://localhost:5174..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$WorkspaceRoot\dashboard'; npm --workspace=apps/web-dashboard run preview -- --port 5174"
 

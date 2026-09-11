@@ -104,11 +104,32 @@ export class WebSocketService {
   private shouldReconnect = true;
   private reconnectTimeout: any = null;
 
+  private currentTenantId: string | null = null;
+  private currentSiteId: string | null = null;
+  private currentUserId: string | null = null;
+
   connect(tenantId: string, siteId: string, userId: string) {
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
-      return;
+    this.shouldReconnect = true;
+
+    if (this.socket) {
+      if (
+        this.currentTenantId === tenantId &&
+        this.currentSiteId === siteId &&
+        this.currentUserId === userId
+      ) {
+        if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+          return;
+        }
+      } else {
+        // Scoping parameters changed: close stale socket and reconnect with new parameters
+        this.socket.close();
+        this.socket = null;
+      }
     }
 
+    this.currentTenantId = tenantId;
+    this.currentSiteId = siteId;
+    this.currentUserId = userId;
     this.isConnecting = true;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")

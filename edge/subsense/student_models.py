@@ -304,21 +304,18 @@ def train_node_student_high_recall(
     teacher_ae.eval()
     teacher_ae.to(device)
 
-    # Knowledge distillation targets: ground truth with teacher soft probability guidance
-    all_x = np.vstack([x_train, x_val])
-    all_y = np.concatenate([y_train, y_val]).astype(np.float32)
-
+    # Knowledge distillation targets: train strictly on x_train to avoid validation leakage
     with torch.no_grad():
-        all_x_t = torch.tensor(all_x, dtype=torch.float32).to(device)
-        t_errors = teacher_ae.compute_reconstruction_error(all_x_t).cpu().numpy()
+        x_train_t = torch.tensor(x_train, dtype=torch.float32).to(device)
+        t_errors = teacher_ae.compute_reconstruction_error(x_train_t).cpu().numpy()
         # Teacher soft probability: sigmoid of scaled error delta
         scale = max(float(teacher_ae_threshold), 1e-4)
         t_soft_prob = 1.0 / (1.0 + np.exp(-np.clip((t_errors - teacher_ae_threshold) / scale, -10.0, 10.0)))
         # Target blends ground truth with teacher soft guidance
-        distill_target = np.clip(0.6 * all_y + 0.4 * t_soft_prob, 0.0, 1.0)
+        distill_target = np.clip(0.6 * y_train.astype(np.float32) + 0.4 * t_soft_prob, 0.0, 1.0)
 
     dataset = TensorDataset(
-        torch.tensor(all_x, dtype=torch.float32),
+        torch.tensor(x_train, dtype=torch.float32),
         torch.tensor(distill_target, dtype=torch.float32),
     )
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)

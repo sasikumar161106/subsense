@@ -184,7 +184,7 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
         const updated = await AlertEscalationEngine.resolveAlert(alertId, userId);
         return { success: true, alert: updated };
       } catch (localErr: any) {
-        return reply.status(400).send({ error: err.message });
+        return reply.status(400).send({ error: localErr?.message || err.message });
       }
     }
   });

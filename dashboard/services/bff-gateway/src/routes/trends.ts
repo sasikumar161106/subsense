@@ -4,9 +4,9 @@ import { withTenantScope } from "../db/client";
 export interface TrendDataPoint {
   timestamp: string;
   tilt_deg: number;
-  displacement_mm: number;
+  displacement_mm: number | null;
   vibration_rms: number;
-  crack_index: number;
+  crack_index: number | null;
   is_downsampled: boolean;
 }
 
@@ -39,9 +39,12 @@ export const trendsRoutes: FastifyPluginAsync = async (fastify) => {
     const siteId = request.query.site_id || "PANEL7-JHARIA";
     const nodeId = request.query.node_id || "SS-PANEL7-N042";
 
+    // Zero Data Fabrication: physical 2-channel node only reports tilt & vibration
+    const isPhysicalTwoChannel = nodeId === "SS-PANEL7-N042" || nodeId.includes("PHYSICAL");
+
+    const historyPoints: TrendDataPoint[] = [];
     // Generate downsampled historical timeline leading up to now
     const now = Date.now();
-    const historyPoints: TrendDataPoint[] = [];
     const count = range === "1h" ? 60 : range === "24h" ? 48 : range === "7d" ? 56 : 60;
     const intervalMs =
       range === "1h"
@@ -65,9 +68,9 @@ export const trendsRoutes: FastifyPluginAsync = async (fastify) => {
       historyPoints.push({
         timestamp: ts,
         tilt_deg: parseFloat((baseTilt + noise).toFixed(4)),
-        displacement_mm: parseFloat((baseDisplacement + noise * 5).toFixed(3)),
+        displacement_mm: isPhysicalTwoChannel ? null : parseFloat((baseDisplacement + noise * 5).toFixed(3)),
         vibration_rms: parseFloat((0.8 + Math.sin(i * 0.5) * 0.4).toFixed(3)),
-        crack_index: parseFloat(Math.min(0.08, 0.01 + (count - i) * 0.001).toFixed(4)),
+        crack_index: isPhysicalTwoChannel ? null : parseFloat(Math.min(0.08, 0.01 + (count - i) * 0.001).toFixed(4)),
         is_downsampled: range !== "1h",
       });
     }
@@ -77,21 +80,23 @@ export const trendsRoutes: FastifyPluginAsync = async (fastify) => {
     const lastDisplacement = historyPoints[historyPoints.length - 1].displacement_mm;
     const forecastIntervalMs = 30 * 60 * 1000; // 30 min steps
 
-    for (let j = 1; j <= 24; j++) {
-      const ts = new Date(now + j * forecastIntervalMs).toISOString();
-      const spread = j * 0.08; // uncertainty widens into the future
-      const medianIncrease = j * 0.06;
+    if (lastDisplacement !== null) {
+      for (let j = 1; j <= 24; j++) {
+        const ts = new Date(now + j * forecastIntervalMs).toISOString();
+        const spread = j * 0.08; // uncertainty widens into the future
+        const medianIncrease = j * 0.06;
 
-      const p50 = parseFloat((lastDisplacement + medianIncrease).toFixed(3));
-      const p10 = parseFloat((p50 - spread).toFixed(3));
-      const p90 = parseFloat((p50 + spread * 1.5).toFixed(3));
+        const p50 = parseFloat((lastDisplacement + medianIncrease).toFixed(3));
+        const p10 = parseFloat((p50 - spread).toFixed(3));
+        const p90 = parseFloat((p50 + spread * 1.5).toFixed(3));
 
-      forecastPoints.push({
-        timestamp: ts,
-        p10,
-        p50,
-        p90,
-      });
+        forecastPoints.push({
+          timestamp: ts,
+          p10,
+          p50,
+          p90,
+        });
+      }
     }
 
     // Interactive event markers

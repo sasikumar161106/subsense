@@ -188,17 +188,15 @@ int subsense_serialize_event_json(
 ) {
     if (!event || !out_json || max_len == 0) return 0;
 
-    // Build contributing features JSON array
+    // Build contributing features JSON array with bounded buffer safety
     char feat_buf[128] = "[";
-    for (int i = 0; i < event->num_contributing_features; i++) {
-        strcat(feat_buf, "\"");
-        strcat(feat_buf, event->contributing_features[i]);
-        strcat(feat_buf, "\"");
-        if (i < event->num_contributing_features - 1) {
-            strcat(feat_buf, ", ");
-        }
+    size_t feat_len = 1;
+    for (int i = 0; i < event->num_contributing_features && feat_len < sizeof(feat_buf) - 20; i++) {
+        int added = snprintf(feat_buf + feat_len, sizeof(feat_buf) - feat_len, "%s\"%s\"",
+                             (i > 0 ? ", " : ""), event->contributing_features[i]);
+        if (added > 0) feat_len += (size_t)added;
     }
-    strcat(feat_buf, "]");
+    strncat(feat_buf, "]", sizeof(feat_buf) - strlen(feat_buf) - 1);
 
     // Format exact JSON schema
     int written = snprintf(

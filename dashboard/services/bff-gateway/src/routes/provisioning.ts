@@ -19,7 +19,7 @@ export const provisioningRoutes: FastifyPluginAsync = async (fastify) => {
     const { tenantId } = request.params;
 
     // RBAC check: Only site_admin can provision new sites
-    if (session && session.role !== "site_admin") {
+    if (!session || session.role !== "site_admin") {
       return reply.status(403).send({ error: "Forbidden: Only Site Administrator can provision new mine panels" });
     }
 

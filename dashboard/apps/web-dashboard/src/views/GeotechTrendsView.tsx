@@ -54,7 +54,7 @@ export const GeotechTrendsView: React.FC = () => {
         scenario: `Extraction +${simExtractionRate}t/hr, Water Table -${simWaterTableDrop}m`,
         peakSubsidenceVelocity: (0.15 + simExtractionRate * 0.0008 + simWaterTableDrop * 0.02).toFixed(3),
         criticalBreachProb: Math.min(94, Math.round(35 + simExtractionRate * 0.25 + simWaterTableDrop * 4)),
-        timeToLimitDays: (18 - simWaterTableDrop * 1.5).toFixed(1),
+        timeToLimitDays: Math.max(0, 18 - simWaterTableDrop * 1.5).toFixed(1),
       });
       setIsSimulating(false);
     }, 600);

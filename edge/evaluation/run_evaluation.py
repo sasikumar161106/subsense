@@ -495,25 +495,29 @@ def run_evaluation():
     node_acc_cfg = cfg.get("acceptance_criteria", cfg.get("acceptance", {})).get("node", {})
     gw_acc_cfg = cfg.get("acceptance_criteria", cfg.get("acceptance", {})).get("gateway", {})
 
-    node_max_size = float(node_acc_cfg.get("max_model_size_kb", 200.0))
-    node_max_lat = float(node_acc_cfg.get("max_latency_ms", 500.0))
+    node_max_size = float(node_acc_cfg.get("max_model_size_kb", 256.0))
+    node_max_lat = float(node_acc_cfg.get("max_latency_ms", 50.0))
     node_min_rec = float(node_acc_cfg.get("min_recall", 0.95))
+    node_max_fpr = float(node_acc_cfg.get("max_fpr", 0.05))
 
     gw_max_size = float(gw_acc_cfg.get("max_model_size_kb", 1024.0))
     gw_max_lat = float(gw_acc_cfg.get("max_latency_ms", 200.0))
     gw_min_rec = float(gw_acc_cfg.get("min_recall", 0.95))
+    gw_max_fpr = float(gw_acc_cfg.get("max_fpr", 0.05))
 
     # Node evaluation
     node_size_pass = node_int8_size_kb <= node_max_size
     node_lat_pass = node_bench["mean_ms"] <= node_max_lat
     node_rec_pass = node_metrics_int8["recall"] >= node_min_rec
-    node_overall_pass = node_size_pass and node_lat_pass and node_rec_pass
+    node_fpr_pass = node_metrics_int8.get("fpr", 0.0) <= node_max_fpr
+    node_overall_pass = node_size_pass and node_lat_pass and node_rec_pass and node_fpr_pass
 
     print("\nNODE-TIER RESULT")
     print("----------------")
     print(f"Model Size: {'PASS' if node_size_pass else 'FAIL'} ({node_int8_size_kb:.2f} KB <= {node_max_size:.1f} KB)")
     print(f"Latency:    {'PASS' if node_lat_pass else 'FAIL'} ({node_bench['mean_ms']:.4f} ms <= {node_max_lat:.1f} ms)")
     print(f"Recall:     {'PASS' if node_rec_pass else 'FAIL'} ({node_metrics_int8['recall']*100:.2f}% >= {node_min_rec*100:.1f}%)")
+    print(f"FPR:        {'PASS' if node_fpr_pass else 'FAIL'} ({node_metrics_int8.get('fpr', 0.0)*100:.2f}% <= {node_max_fpr*100:.1f}%)")
     print("----------------")
     print(f"Overall:    {'PASS' if node_overall_pass else 'FAIL'}")
 
@@ -521,13 +525,15 @@ def run_evaluation():
     gw_size_pass = gw_int8_size_kb <= gw_max_size
     gw_lat_pass = gw_bench["mean_ms"] <= gw_max_lat
     gw_rec_pass = gw_metrics_int8["recall"] >= gw_min_rec
-    gw_overall_pass = gw_size_pass and gw_lat_pass and gw_rec_pass
+    gw_fpr_pass = gw_metrics_int8.get("fpr", 0.0) <= gw_max_fpr
+    gw_overall_pass = gw_size_pass and gw_lat_pass and gw_rec_pass and gw_fpr_pass
 
     print("\nGATEWAY-TIER RESULT")
     print("-------------------")
     print(f"Model Size: {'PASS' if gw_size_pass else 'FAIL'} ({gw_int8_size_kb:.2f} KB <= {gw_max_size:.1f} KB)")
     print(f"Latency:    {'PASS' if gw_lat_pass else 'FAIL'} ({gw_bench['mean_ms']:.4f} ms <= {gw_max_lat:.1f} ms)")
     print(f"Recall:     {'PASS' if gw_rec_pass else 'FAIL'} ({gw_metrics_int8['recall']*100:.2f}% >= {gw_min_rec*100:.1f}%)")
+    print(f"FPR:        {'PASS' if gw_fpr_pass else 'FAIL'} ({gw_metrics_int8.get('fpr', 0.0)*100:.2f}% <= {gw_max_fpr*100:.1f}%)")
     print("-------------------")
     print(f"Overall:    {'PASS' if gw_overall_pass else 'FAIL'}")
 

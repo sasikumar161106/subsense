@@ -129,24 +129,51 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
 
     # Node health metadata (supports 'battery_percent', 'battery', 'bat')
     health_dict = raw.get("node_health") if isinstance(raw.get("node_health"), dict) else {}
-    battery_pct = raw.get("battery_percent") or raw.get("battery") or raw.get("bat") or health_dict.get("battery_percent") or 94
-    rssi_dbm = raw.get("rssi_dbm") or raw.get("rssi") or health_dict.get("rssi_dbm") or -68
-    hop_count = raw.get("hop_count") or raw.get("hops") or health_dict.get("hop_count") or 0
+
+    bat_candidate = None
+    for k in ("battery_percent", "battery", "bat"):
+        if k in raw and raw[k] is not None:
+            bat_candidate = raw[k]
+            break
+    if bat_candidate is None and "battery_percent" in health_dict and health_dict["battery_percent"] is not None:
+        bat_candidate = health_dict["battery_percent"]
+    if bat_candidate is None:
+        bat_candidate = 94
 
     try:
-        battery_pct = int(battery_pct)
+        battery_pct = max(0, min(100, int(bat_candidate)))
     except (ValueError, TypeError):
         battery_pct = 94
 
+    rssi_candidate = None
+    for k in ("rssi_dbm", "rssi"):
+        if k in raw and raw[k] is not None:
+            rssi_candidate = raw[k]
+            break
+    if rssi_candidate is None and "rssi_dbm" in health_dict and health_dict["rssi_dbm"] is not None:
+        rssi_candidate = health_dict["rssi_dbm"]
+    if rssi_candidate is None:
+        rssi_candidate = -68
+
     try:
-        rssi_dbm = int(rssi_dbm)
+        rssi_dbm = int(rssi_candidate)
         if rssi_dbm < -130 or rssi_dbm > 0:
             rssi_dbm = -68
     except (ValueError, TypeError):
         rssi_dbm = -68
 
+    hop_candidate = None
+    for k in ("hop_count", "hops"):
+        if k in raw and raw[k] is not None:
+            hop_candidate = raw[k]
+            break
+    if hop_candidate is None and "hop_count" in health_dict and health_dict["hop_count"] is not None:
+        hop_candidate = health_dict["hop_count"]
+    if hop_candidate is None:
+        hop_candidate = 0
+
     try:
-        hop_count = int(hop_count)
+        hop_count = max(0, int(hop_candidate))
     except (ValueError, TypeError):
         hop_count = 0
 
@@ -300,6 +327,15 @@ class SerialJSONExtractor:
         self._buffer = ""
         self._brace_depth = 0
         self._inside_json = False
+        self._in_string = False
+        self._escaped = False
+
+    def reset(self):
+        self._buffer = ""
+        self._brace_depth = 0
+        self._inside_json = False
+        self._in_string = False
+        self._escaped = False
 
     def feed_line(self, line: str) -> List[Dict[str, Any]]:
         extracted = []
@@ -319,28 +355,38 @@ class SerialJSONExtractor:
 
         # Multi-line / mixed banner parser
         for char in line:
-            if char == "{":
-                if self._brace_depth == 0:
+            if self._inside_json:
+                self._buffer += char
+                if self._escaped:
+                    self._escaped = False
+                    continue
+                if char == "\\":
+                    self._escaped = True
+                    continue
+                if char == '"':
+                    self._in_string = not self._in_string
+                    continue
+                if not self._in_string:
+                    if char == "{":
+                        self._brace_depth += 1
+                    elif char == "}":
+                        self._brace_depth -= 1
+                        if self._brace_depth == 0:
+                            self._inside_json = False
+                            try:
+                                candidate = json.loads(self._buffer)
+                                if isinstance(candidate, dict):
+                                    extracted.append(candidate)
+                            except json.JSONDecodeError:
+                                pass
+                            self._buffer = ""
+            else:
+                if char == "{":
                     self._buffer = "{"
                     self._inside_json = True
-                else:
-                    self._buffer += char
-                self._brace_depth += 1
-            elif char == "}":
-                if self._inside_json:
-                    self._buffer += char
-                    self._brace_depth -= 1
-                    if self._brace_depth == 0:
-                        self._inside_json = False
-                        try:
-                            candidate = json.loads(self._buffer)
-                            if isinstance(candidate, dict):
-                                extracted.append(candidate)
-                        except json.JSONDecodeError:
-                            pass
-                        self._buffer = ""
-            elif self._inside_json:
-                self._buffer += char
+                    self._brace_depth = 1
+                    self._in_string = False
+                    self._escaped = False
 
         return extracted
 
@@ -537,6 +583,7 @@ class GatewayBridge:
         logger.info(f"Starting Direct LoRa SX126x ingestion on {self.port} @ {freq} MHz...")
 
         while self._running:
+            lora = None
             try:
                 lora = sx126x(serial_num=self.port, freq=freq, addr=0, power=22, rssi=True)
                 logger.info(f"[LORA] SX126x hardware initialized on {self.port} ({freq} MHz). Listening for packets...")
@@ -562,11 +609,15 @@ class GatewayBridge:
 
                     time.sleep(0.05)
 
-                lora.close()
-
             except Exception as e:
                 logger.warning(f"[LORA ERROR] {e}. Retrying connection in 2s...")
                 time.sleep(2.0)
+            finally:
+                if lora is not None:
+                    try:
+                        lora.close()
+                    except Exception:
+                        pass
 
 
 # ==============================================================================
@@ -580,7 +631,8 @@ def main():
     parser.add_argument("--port", default=os.getenv("SER_PORT", DEFAULT_PORT), help="Serial port (e.g. COM5, /dev/ttyUSB0)")
     parser.add_argument("--baud", type=int, default=int(os.getenv("SER_BAUD", str(DEFAULT_BAUD))), help="Serial baud rate (default: 115200 for ESP32 gateway, 9600 for direct LoRa)")
     parser.add_argument("--lora-freq", type=int, default=int(os.getenv("LORA_FREQ", "865")), help="LoRa frequency in MHz (default: 865)")
-    parser.add_argument("--ingest-url", default=os.getenv("INGEST_URL", DEFAULT_INGEST_URL), help="AI/ML Ingestion URL")
+    parser.add_argument("--ingest-url", default=os.getenv("INGEST_URL", os.getenv("BFF_URL", DEFAULT_INGEST_URL)), help="Telemetry Ingestion URL")
+    parser.add_argument("--bff-url", default=os.getenv("BFF_URL", os.getenv("INGEST_URL", DEFAULT_BFF_URL)), help="BFF Gateway Telemetry Endpoint URL")
     parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="Path to offline SQLite database")
     parser.add_argument("--mock", action="store_true", help="Run in mock mode generating sample Gateway packets")
     args = parser.parse_args()
@@ -589,10 +641,12 @@ def main():
     if args.mode == "direct-lora" and args.baud == DEFAULT_BAUD:
         baud_rate = 9600  # Default E22 UART communication rate
 
+    target_url = args.bff_url or args.ingest_url
+
     bridge = GatewayBridge(
         port=args.port,
         baud=baud_rate,
-        ingest_url=args.ingest_url,
+        ingest_url=target_url,
         db_path=args.db_path,
     )
 

@@ -33,9 +33,10 @@ if (-not $Role) {
     Write-Host " [6] Standalone LoRa Gallery Relay Node (Multi-Hop Repeater)" -ForegroundColor Green
     Write-Host " [7] Run LoRa SX126x Hardware Diagnostics on $Port" -ForegroundColor Cyan
     Write-Host " [8] Run Complete System (Backend Services + LoRa Gateway)" -ForegroundColor Magenta
+    Write-Host " [9] Run All Nodes Concurrently (Dashboard + Gateway + Relay + Sensor)" -ForegroundColor Magenta
     
-    $Choice = Read-Host "`nEnter selection (1-8) [Default: 1]"
-    if (-not $Choice) { $Choice = "1" }
+    $Choice = Read-Host "`nEnter selection (1-9) [Default: 9]"
+    if (-not $Choice) { $Choice = "9" }
 } else {
     $Choice = $Role
 }
@@ -80,6 +81,22 @@ switch ($Choice) {
         Start-Process powershell -ArgumentList "-File", "`"$WorkspaceRoot\start_dashboard.ps1`""
         Write-Host "[2/2] Starting Surface LoRa Gateway on $Port..." -ForegroundColor Green
         python "$WorkspaceRoot\edge\lora_nodes\main.py" --mode gateway --port $Port --freq $Freq
+    }
+    "9" {
+        Write-Host "`n[1/4] Launching SubSense Dashboard (BFF + Web UI)..." -ForegroundColor Yellow
+        Start-Process powershell -ArgumentList "-File", "`"$WorkspaceRoot\start_dashboard.ps1`""
+        Start-Sleep -Seconds 2
+
+        Write-Host "[2/4] Launching Surface LoRa Gateway Node in separate window..." -ForegroundColor Green
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '=== LORA SURFACE GATEWAY NODE ===' -ForegroundColor Green; python '$WorkspaceRoot\edge\lora_nodes\main.py' --mode gateway --port $Port --freq $Freq"
+        Start-Sleep -Seconds 1
+
+        Write-Host "[3/4] Launching Gallery Relay Node in separate window..." -ForegroundColor Green
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '=== LORA GALLERY RELAY NODE ===' -ForegroundColor Green; python '$WorkspaceRoot\edge\lora_nodes\main.py' --mode relay --port $Port --freq $Freq"
+        Start-Sleep -Seconds 1
+
+        Write-Host "[4/4] Launching Underground Sensor Node in current window..." -ForegroundColor Green
+        python "$WorkspaceRoot\edge\lora_nodes\main.py" --mode sensor --port $Port --freq $Freq
     }
     default {
         Write-Host "Invalid selection. Exiting." -ForegroundColor Red

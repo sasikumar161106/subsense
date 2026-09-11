@@ -70,6 +70,7 @@ def run_listener(port: str, freq: int = 865, duration: int = 300):
     print("  Press Ctrl+C to stop")
     print("=" * 65)
 
+    node = None
     try:
         node = sx126x(serial_num=port, freq=freq, addr=0, power=22, rssi=True)
         packets_count = 0
@@ -82,12 +83,17 @@ def run_listener(port: str, freq: int = 865, duration: int = 300):
                 print(f"[{time.strftime('%H:%M:%S')}] [RX #{packets_count}] RSSI: {rssi} dBm | Payload: {msg}")
             time.sleep(0.05)
 
-        node.close()
         print(f"\n[LISTENER] Finished: Received {packets_count} packets in {duration}s.")
     except KeyboardInterrupt:
         print(f"\n[LISTENER] Stopped by user.")
     except Exception as e:
         print(f"\n[LISTENER] Error: {e}")
+    finally:
+        if node is not None:
+            try:
+                node.close()
+            except Exception:
+                pass
 
 
 def run_diagnostics(port: str, freq: int = 865):

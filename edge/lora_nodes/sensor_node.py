@@ -309,6 +309,7 @@ class LoRaSensorNode:
 def run_sensor(
     node_id: Optional[str] = None,
     port: Optional[str] = None,
+    freq: Optional[int] = None,
     anomaly: bool = False,
     esp32_port: Optional[str] = None,
 ):
@@ -321,6 +322,7 @@ def run_sensor(
     node = LoRaSensorNode(
         node_id=node_id or DEFAULT_NODE_ID,
         port=port or SERIAL_PORT,
+        freq=freq or LORA_SETTINGS["FREQUENCY"],
         simulate_anomaly=anomaly,
         esp32_port=esp32_port,
     )

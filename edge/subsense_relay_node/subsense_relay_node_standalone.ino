@@ -141,9 +141,9 @@ static void handle_forward(const SubSenseLoraMeshPacket* pkt) {
     s_dedup_next = (s_dedup_next + 1) % SUBSENSE_MESH_DEDUP_CACHE_SIZE;
 
     SubSenseLoraMeshPacket fwd = *pkt;
-    fwd.hop_count = pkt->hop_count + 1;
-
-    size_t wire_len = SUBSENSE_MESH_FRAG_HEADER_LEN + pkt->chunk_len;
+    uint8_t safe_chunk_len = (pkt->chunk_len > sizeof(pkt->payload)) ? sizeof(pkt->payload) : pkt->chunk_len;
+    fwd.chunk_len = safe_chunk_len;
+    size_t wire_len = SUBSENSE_MESH_FRAG_HEADER_LEN + safe_chunk_len;
     send_lora_packet((const uint8_t*)&fwd, wire_len);
 
     // Blink status LED asynchronously on forward (non-blocking)

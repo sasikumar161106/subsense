@@ -44,5 +44,14 @@ export async function fetchApi<T = any>(
     throw new Error(errorMsg);
   }
 
-  return response.json();
+  if (response.status === 204) {
+    return null as T;
+  }
+
+  const text = await response.text();
+  if (!text || text.trim() === "") {
+    return null as T;
+  }
+
+  return JSON.parse(text);
 }

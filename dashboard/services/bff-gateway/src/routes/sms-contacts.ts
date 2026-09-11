@@ -112,7 +112,11 @@ export const smsContactsRoutes: FastifyPluginAsync = async (fastify) => {
   // 7. Update SSH gateway configuration
   fastify.post<{
     Body: { host?: string; port?: number; user?: string };
-  }>("/api/v1/sms/config", async (request) => {
+  }>("/api/v1/sms/config", async (request, reply) => {
+    const session = (request as any).userSession;
+    if (!session || (session.role !== "site_admin" && session.role !== "technical_lead")) {
+      return reply.status(403).send({ error: "Forbidden: Only Site Administrator or Technical Lead can update SMS config" });
+    }
     TermuxSmsService.setConfig(request.body || {});
     return {
       success: true,

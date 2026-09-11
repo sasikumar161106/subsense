@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await fetchApi("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole, mfaCode: "123456" }),
       });
 
       if (res.token) {

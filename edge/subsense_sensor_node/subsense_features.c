@@ -127,10 +127,12 @@ void subsense_features_to_int8(
     if (!features || !config || !out_int8) return;
 
     for (int i = 0; i < SUBSENSE_NUM_FEATURES; i++) {
-        // Z-score normalization
-        float normalized = (features[i] - config->scaler_mean[i]) / config->scaler_scale[i];
-        // Symmetric/Asymmetric INT8 quantization
-        float q_val = roundf(normalized / config->quant_input_scale) + (float)config->quant_input_zp;
+        // Z-score normalization with zero-division guard
+        float scale = fabsf(config->scaler_scale[i]) > 1e-6f ? config->scaler_scale[i] : 1.0f;
+        float normalized = (features[i] - config->scaler_mean[i]) / scale;
+        // Symmetric/Asymmetric INT8 quantization with zero-division guard
+        float q_scale = fabsf(config->quant_input_scale) > 1e-6f ? config->quant_input_scale : 1.0f;
+        float q_val = roundf(normalized / q_scale) + (float)config->quant_input_zp;
         if (q_val > 127.0f) q_val = 127.0f;
         if (q_val < -128.0f) q_val = -128.0f;
         out_int8[i] = (int8_t)q_val;

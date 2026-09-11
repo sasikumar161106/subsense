@@ -60,8 +60,8 @@ export const tenantsRoutes: FastifyPluginAsync = async (fastify) => {
             readings: {
               tilt_deg: parseFloat(tele?.tilt_deg || "0.120"),
               vibration_rms_mm_s: parseFloat(tele?.vibration_rms_mm_s || "0.850"),
-              displacement_mm: parseFloat(tele?.displacement_mm || "2.100"),
-              crack_index: parseFloat(tele?.crack_index || "0.010"),
+              displacement_mm: tele?.displacement_mm != null ? parseFloat(tele.displacement_mm) : null,
+              crack_index: tele?.crack_index != null ? parseFloat(tele.crack_index) : null,
             },
             anomaly_score: parseFloat(tele?.anomaly_score || "0.25"),
             health: {

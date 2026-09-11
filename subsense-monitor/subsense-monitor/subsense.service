@@ -1,0 +1,15 @@
+[Unit]
+Description=SubSense Sensor Monitoring Dashboard
+After=network.target network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/subsense-monitor
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/pi/subsense-monitor/app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

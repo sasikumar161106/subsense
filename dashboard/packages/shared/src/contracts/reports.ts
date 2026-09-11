@@ -13,7 +13,7 @@ export const DgmsReportRequestPayloadSchema = z.object({
   reporting_period: ReportingPeriodSchema,
   requested_by: z.string().min(1).describe("Regulator or Auditor User ID (e.g. USR-REG-4412)"),
   output_format: z.enum(["application/pdf", "application/json", "text/csv"]).describe("MIME format of report"),
-  include_kriging_risk_maps: z.boolean().describe("Whether to attach 2D kriging spatial interpolation risk heatmaps"),
+  include_kriging_risk_maps: z.boolean().optional().describe("Whether to attach 2D kriging spatial interpolation risk heatmaps"),
   include_audit_trail: z.boolean().describe("Whether to append cryptographically signed audit ledger"),
 });
 
