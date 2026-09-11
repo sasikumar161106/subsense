@@ -8,10 +8,14 @@ Tests:
 5. Node-tier student footprint (<= 200 KB target) and high-recall validation.
 """
 
+import os
+import sys
 import unittest
 import numpy as np
 import pandas as pd
 import torch
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from subsense.data_generator import generate_mine_telemetry
 from subsense.feature_extractor import (

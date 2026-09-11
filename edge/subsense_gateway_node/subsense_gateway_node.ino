@@ -20,6 +20,7 @@
 
 // Hardware Pin Configuration
 #define PIN_STATUS_LED   2
+static volatile uint32_t s_led_off_ms = 0;
 
 /**
  * @brief Callback invoked whenever a full JSON event/health message
@@ -33,6 +34,7 @@ static void on_lora_data_received(
     uint8_t hop_count
 ) {
     digitalWrite(PIN_STATUS_LED, HIGH);
+    s_led_off_ms = millis() + 30;
 
     Serial.println();
     Serial.println("================================================================================");

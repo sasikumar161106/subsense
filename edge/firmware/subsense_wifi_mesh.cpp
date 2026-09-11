@@ -65,6 +65,7 @@ typedef struct {
     uint8_t  msg_id;
     uint8_t  chunks_received;
     uint8_t  total_chunks;
+    uint32_t received_chunk_mask;
     uint16_t total_len;
     uint32_t last_update_ms;
     char     buffer[SUBSENSE_MESH_MAX_PAYLOAD_LEN];
@@ -74,11 +75,11 @@ typedef struct {
 // Module state (static, no heap)
 // ---------------------------------------------------------------------------
 
-static SubSenseMeshRole            s_role = SUBSENSE_MESH_ROLE_NODE;
-static subsense_mesh_rx_callback_t s_rx_callback = NULL;
-static bool                        s_ready = false;
-static uint8_t                     s_next_msg_id = 0;
-static SubSenseMeshReassemblySlot  s_slots[SUBSENSE_MESH_MAX_CONCURRENT_MSGS];
+static SubSenseMeshRole              s_role        = SUBSENSE_MESH_ROLE_NODE;
+static subsense_mesh_rx_callback_t   s_rx_callback = NULL;
+static SubSenseMeshReassemblySlot    s_slots[SUBSENSE_MESH_MAX_CONCURRENT_MSGS];
+static uint8_t                       s_next_msg_id = 0;
+static bool                          s_ready       = false;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -117,6 +118,7 @@ static int allocate_slot(const uint8_t mac[6], uint8_t msg_id, uint16_t total_le
     slot->msg_id = msg_id;
     slot->chunks_received = 0;
     slot->total_chunks = total_chunks;
+    slot->received_chunk_mask = 0;
     slot->total_len = total_len;
     slot->last_update_ms = millis();
     memset(slot->buffer, 0, sizeof(slot->buffer));
@@ -200,11 +202,16 @@ static void on_esp_now_recv(const esp_now_recv_info_t* info, const uint8_t* data
     size_t offset = (size_t)pkt->chunk_index * SUBSENSE_MESH_FRAG_CHUNK_LEN;
     if (offset + pkt->chunk_len > sizeof(slot->buffer)) return; // guard against corruption
 
-    memcpy(slot->buffer + offset, pkt->payload, pkt->chunk_len);
-    slot->chunks_received++;
+    uint32_t chunk_bit = (1U << pkt->chunk_index);
+    if (!(slot->received_chunk_mask & chunk_bit)) {
+        slot->received_chunk_mask |= chunk_bit;
+        slot->chunks_received++;
+        memcpy(slot->buffer + offset, pkt->payload, pkt->chunk_len);
+    }
     slot->last_update_ms = millis();
 
-    if (slot->chunks_received >= slot->total_chunks) {
+    uint32_t expected_mask = (slot->total_chunks >= 32) ? 0xFFFFFFFFU : ((1U << slot->total_chunks) - 1U);
+    if (slot->received_chunk_mask == expected_mask) {
         // Full message reassembled -- ensure null termination and hand off.
         size_t final_len = slot->total_len < sizeof(slot->buffer) ? slot->total_len : sizeof(slot->buffer) - 1;
         slot->buffer[final_len] = '\0';
@@ -276,6 +283,9 @@ bool subsense_wifi_mesh_send(const char* json_payload, size_t len) {
     WiFi.macAddress(my_mac);
 
     for (uint8_t i = 0; i < total_chunks; i++) {
+        if (i > 0) {
+            delay(5); // Throttle burst transmission to prevent TX buffer overflow
+        }
         SubSenseMeshPacket pkt;
         pkt.magic = SUBSENSE_MESH_MAGIC;
         pkt.msg_id = msg_id;

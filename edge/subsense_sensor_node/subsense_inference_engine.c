@@ -82,18 +82,65 @@ bool subsense_run_inference(
             siren = false;
         }
     } else {
-        // Run Node INT8 Single-Layer Detector
-        uint8_t alert = subsense_node_infer_int8(in_features_int8);
-        if (alert) {
-            score = 0.95f;
-            confidence = 0.88f;
-            breach = "critical";
-            siren = true; // Local siren fires immediately without mesh/cloud roundtrip!
+        // Node Tier: Multi-Factor On-Device Geotechnical TinyML Anomaly Assessment
+        float tilt_cur = fabsf(raw_features[0]);
+        float tilt_rate = fabsf(raw_features[1]);
+        float vib_rms = raw_features[3];
+
+        // 1. Evaluate quantized INT8 model forward pass
+        uint8_t int8_alert = subsense_node_infer_int8(in_features_int8);
+
+        // 2. Physical tilt stress component (Nominal: < 1.5°, Warning: 2.0°-3.9°, Critical: >= 4.0°)
+        float tilt_comp = 0.0f;
+        if (tilt_cur >= 4.0f) {
+            tilt_comp = 0.90f + 0.09f * fminf((tilt_cur - 4.0f) / 6.0f, 1.0f);
+        } else if (tilt_cur >= 2.0f) {
+            float t = (tilt_cur - 2.0f) / 2.0f;
+            tilt_comp = 0.35f + 0.35f * t;
         } else {
-            score = 0.05f;
+            tilt_comp = 0.03f + 0.07f * (tilt_cur / 2.0f);
+        }
+
+        // 3. Dynamic seismic / vibration component (Nominal: < 2.0 mm/s, Warning: 2.0-5.0, Critical: >= 6.0 mm/s)
+        float vib_comp = 0.0f;
+        if (vib_rms >= 6.0f) {
+            vib_comp = 0.85f + 0.14f * fminf((vib_rms - 6.0f) / 10.0f, 1.0f);
+        } else if (vib_rms >= 2.0f) {
+            float v = (vib_rms - 2.0f) / 4.0f;
+            vib_comp = 0.25f + 0.35f * v;
+        } else {
+            vib_comp = 0.02f + 0.04f * (vib_rms / 2.0f);
+        }
+
+        // 4. Rate-of-change excursion component
+        float rate_comp = 0.0f;
+        if (tilt_rate >= 1.0f) {
+            rate_comp = 0.40f;
+        } else if (tilt_rate >= 0.2f) {
+            rate_comp = 0.15f * ((tilt_rate - 0.2f) / 0.8f);
+        }
+
+        // 5. Unified ML Anomaly Score Fusion
+        score = fmaxf(tilt_comp, vib_comp) + rate_comp;
+        if (int8_alert && score < 0.70f) {
+            score += 0.20f; // NN corroboration boost
+        }
+        if (score > 0.99f) score = 0.99f;
+        if (score < 0.03f) score = 0.03f;
+
+        // 6. Decision & Siren Boundary Classification
+        if (tilt_cur >= 4.0f || score >= 0.75f) {
+            breach = "critical";
+            siren = true;
             confidence = 0.92f;
+        } else if (tilt_cur >= 2.0f || score >= 0.35f) {
+            breach = "warning";
+            siren = false;
+            confidence = 0.86f;
+        } else {
             breach = "none";
             siren = false;
+            confidence = 0.95f;
         }
     }
 
@@ -103,25 +150,24 @@ bool subsense_run_inference(
     out_event->siren_triggered = siren;
 
     // Identify Contributing Features based on deviations in raw sensor features
-    // [0] tilt_cur, [1] tilt_roc, [2] tilt_var, [3] vib_rms, [4] vib_peaks, [5] disp_delta, [6] crack_state, [7] crack_count
     out_event->num_contributing_features = 0;
-    if (fabsf(raw_features[1]) > 0.04f && out_event->num_contributing_features < 4) {
+    if (raw_features[0] >= 2.0f && out_event->num_contributing_features < 4) {
+        out_event->contributing_features[out_event->num_contributing_features++] = "tilt_excursion";
+    }
+    if (fabsf(raw_features[1]) > 0.20f && out_event->num_contributing_features < 4) {
         out_event->contributing_features[out_event->num_contributing_features++] = "tilt_rate";
     }
-    if (raw_features[3] > 0.12f && out_event->num_contributing_features < 4) {
+    if (raw_features[3] > 2.0f && out_event->num_contributing_features < 4) {
         out_event->contributing_features[out_event->num_contributing_features++] = "vibration_rms";
+    }
+    if (raw_features[4] > 5.0f && out_event->num_contributing_features < 4) {
+        out_event->contributing_features[out_event->num_contributing_features++] = "vibration_peak_count";
     }
     if (fabsf(raw_features[5]) > 0.50f && out_event->num_contributing_features < 4) {
         out_event->contributing_features[out_event->num_contributing_features++] = "displacement_delta";
     }
     if (raw_features[6] > 0.30f && out_event->num_contributing_features < 4) {
         out_event->contributing_features[out_event->num_contributing_features++] = "crack_state";
-    }
-    if (raw_features[4] > 4.0f && out_event->num_contributing_features < 4) {
-        out_event->contributing_features[out_event->num_contributing_features++] = "vibration_peak_count";
-    }
-    if (raw_features[2] > 0.003f && out_event->num_contributing_features < 4) {
-        out_event->contributing_features[out_event->num_contributing_features++] = "tilt_variance";
     }
     if (out_event->num_contributing_features == 0) {
         out_event->contributing_features[out_event->num_contributing_features++] = "nominal_baseline";

@@ -33,6 +33,7 @@ typedef struct {
     uint32_t payload_size;
     uint32_t crc32_checksum;
     uint32_t bytes_received;
+    uint8_t chunk_bitmap[16];
     SubSenseOTASlotState state;
     int8_t smoke_test_input[8];
     int32_t expected_smoke_result;

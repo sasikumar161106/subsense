@@ -59,6 +59,7 @@ static HardwareSerial s_lora(2);
 static SubSenseDedupEntry s_dedup[SUBSENSE_MESH_DEDUP_CACHE_SIZE];
 static int s_dedup_next = 0;
 static uint8_t s_my_mac[6] = {0};
+static volatile uint32_t s_led_off_ms = 0;
 
 static void set_lora_mode(uint8_t m0, uint8_t m1) {
     digitalWrite(LORA_PIN_M0, m0);
@@ -145,14 +146,15 @@ static void handle_forward(const SubSenseLoraMeshPacket* pkt) {
     size_t wire_len = SUBSENSE_MESH_FRAG_HEADER_LEN + pkt->chunk_len;
     send_lora_packet((const uint8_t*)&fwd, wire_len);
 
+    // Blink status LED asynchronously on forward (non-blocking)
     digitalWrite(PIN_STATUS_LED, HIGH);
+    s_led_off_ms = millis() + 20;
+
     Serial.printf("[RELAY FWD] LoRa Msg ID %u (chunk %u/%u) Origin %02X:%02X:%02X:%02X:%02X:%02X | Hop %u -> %u\n",
                   pkt->msg_id, pkt->chunk_index + 1, pkt->total_chunks,
                   pkt->origin_mac[0], pkt->origin_mac[1], pkt->origin_mac[2],
                   pkt->origin_mac[3], pkt->origin_mac[4], pkt->origin_mac[5],
                   pkt->hop_count, fwd.hop_count);
-    delay(20);
-    digitalWrite(PIN_STATUS_LED, LOW);
 }
 
 void setup() {
@@ -177,6 +179,19 @@ void setup() {
 }
 
 void loop() {
+    if (s_led_off_ms > 0 && millis() >= s_led_off_ms) {
+        digitalWrite(PIN_STATUS_LED, LOW);
+        s_led_off_ms = 0;
+    }
+
+    // Age out stale dedup entries every loop
+    uint32_t now = millis();
+    for (int i = 0; i < SUBSENSE_MESH_DEDUP_CACHE_SIZE; i++) {
+        if (s_dedup[i].in_use && (now - s_dedup[i].seen_at_ms) > SUBSENSE_MESH_DEDUP_TIMEOUT_MS) {
+            s_dedup[i].in_use = false;
+        }
+    }
+
     if (s_lora.available() >= SUBSENSE_MESH_FRAG_HEADER_LEN) {
         delay(35); // Wait for packet to finish landing in UART buffer
         uint8_t buf[256];

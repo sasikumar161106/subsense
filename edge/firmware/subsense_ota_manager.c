@@ -56,6 +56,7 @@ bool subsense_ota_start_transfer(
     staging->payload_size = total_payload_size;
     staging->crc32_checksum = expected_crc32;
     staging->bytes_received = 0;
+    memset(staging->chunk_bitmap, 0, sizeof(staging->chunk_bitmap));
     staging->state = OTA_SLOT_STAGING;
     staging->expected_smoke_result = expected_smoke_result;
 
@@ -81,8 +82,19 @@ bool subsense_ota_receive_chunk(
     if (offset + chunk_len > staging->payload_size) return false;
     if (offset + chunk_len > SUBSENSE_OTA_SLOT_MAX_SIZE) return false;
 
+    uint32_t chunk_idx = offset / SUBSENSE_OTA_CHUNK_SIZE;
+    if (chunk_idx < sizeof(staging->chunk_bitmap) * 8) {
+        uint32_t byte_idx = chunk_idx / 8;
+        uint8_t bit_mask = (uint8_t)(1U << (chunk_idx % 8));
+        if (!(staging->chunk_bitmap[byte_idx] & bit_mask)) {
+            staging->chunk_bitmap[byte_idx] |= bit_mask;
+            staging->bytes_received += chunk_len;
+        }
+    } else {
+        staging->bytes_received += chunk_len;
+    }
+
     memcpy(&ota->slot_data[staging_idx][offset], chunk_data, chunk_len);
-    staging->bytes_received += chunk_len;
     return true;
 }
 

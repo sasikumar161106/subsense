@@ -101,18 +101,26 @@ def run_hardware_test(port_name, baud=115200, timeout=10.0):
 
     json_lines = []
     collecting_json = False
+    brace_depth = 0
     deadline = time.time() + 5.0
 
     while time.time() < deadline:
         line = ser.readline().decode("utf-8", errors="replace").strip()
         if line:
             print(f"  [ESP32] {line}")
-            if line.startswith("{"):
-                collecting_json = True
+            for ch in line:
+                if ch == "{":
+                    if not collecting_json:
+                        collecting_json = True
+                        brace_depth = 1
+                    else:
+                        brace_depth += 1
+                elif ch == "}":
+                    if collecting_json:
+                        brace_depth -= 1
+            if collecting_json:
                 json_lines.append(line)
-            elif collecting_json:
-                json_lines.append(line)
-                if line.startswith("}"):
+                if brace_depth == 0:
                     collecting_json = False
                     break
 
