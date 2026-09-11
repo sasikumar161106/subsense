@@ -82,7 +82,18 @@ class LoRaSensorNode:
         try:
             import serial
             logger.info(f"Connecting to ESP32 Sensor Node on {self.esp32_port} @ 115200 baud...")
-            self.esp32_ser = serial.Serial(self.esp32_port, 115200, timeout=1.0)
+            self.esp32_ser = serial.Serial(
+                self.esp32_port,
+                115200,
+                timeout=1.0,
+                rtscts=False,
+                dsrdtr=False,
+            )
+            try:
+                self.esp32_ser.dtr = False
+                self.esp32_ser.rts = False
+            except Exception:
+                pass
             logger.info(f"Connected to ESP32 on {self.esp32_port}")
         except Exception as e:
             logger.error(f"Failed to connect to ESP32 on {self.esp32_port}: {e}")
@@ -160,17 +171,26 @@ class LoRaSensorNode:
 
         status_color = Colors.RED if is_critical else Colors.GREEN
         alert_icon = "🚨 CRITICAL" if is_critical else "📡 NOMINAL"
+        try:
+            tilt_val = payload_str.split('\"tilt_current\":')[1].split(',')[0]
+        except Exception:
+            tilt_val = "0.0"
+        try:
+            vib_val = payload_str.split('\"vibration_rms\":')[1].split(',')[0]
+        except Exception:
+            vib_val = "0.0"
+
         print(
             f"\r{status_color}{alert_icon} [Seq #{self.packet_count}] "
-            f"Tilt: {payload_str.split('\"tilt_current\":')[1].split(',')[0]}° | "
-            f"Vib: {payload_str.split('\"vibration_rms\":')[1].split(',')[0]} mm/s | "
+            f"Tilt: {tilt_val}° | "
+            f"Vib: {vib_val} mm/s | "
             f"LoRa Tx: {'OK' if sent or not self.lora else 'FAIL'}{Colors.RESET}  ",
-            end="",
             flush=True,
         )
         return sent
 
     def run(self):
+        import re
         print(f"\n{Colors.CYAN}{Colors.BOLD}")
         print("╔══════════════════════════════════════════════════════════╗")
         print("║      ⛏️   SUBSENSE LORA STRATA SENSOR NODE ACTIVE        ║")
@@ -192,15 +212,38 @@ class LoRaSensorNode:
                 print(f"{Colors.GREEN}Listening for real-time telemetry from ESP32 on {self.esp32_port}...{Colors.RESET}\n")
                 while True:
                     line = self.esp32_ser.readline().decode("utf-8", errors="ignore").strip()
-                    if line.startswith("{") and line.endswith("}"):
+                    if not line:
+                        continue
+
+                    # 1. Look for embedded JSON object in line
+                    s_idx = line.find("{")
+                    e_idx = line.rfind("}")
+                    if s_idx != -1 and e_idx != -1 and e_idx > s_idx:
+                        json_str = line[s_idx:e_idx+1]
                         try:
-                            data = json.loads(line)
+                            data = json.loads(json_str)
                             tilt = float(data.get("tilt_current", data.get("tilt", 0.0)))
                             is_critical = bool(data.get("siren_triggered", False)) or (tilt >= PHYSICAL_TILT_CRITICAL_DEG)
-                            self.send_packet(line, is_critical)
-                        except Exception as json_err:
+                            self.send_packet(json_str, is_critical)
+                            continue
+                        except Exception:
                             pass
-                    time.sleep(0.01)
+
+                    # 2. Look for human-readable "[SENSOR NODE] Tilt: ... deg | Vib: ... mm/s"
+                    m = re.search(r"Tilt:\s*([0-9.-]+)\s*deg.*?Vib:\s*([0-9.-]+)", line, re.IGNORECASE)
+                    if m:
+                        try:
+                            tilt = float(m.group(1))
+                            vib = float(m.group(2))
+                            is_critical = tilt >= PHYSICAL_TILT_CRITICAL_DEG
+                            packet = self.build_telemetry_packet(tilt, vib, is_critical)
+                            self.send_packet(packet, is_critical)
+                            continue
+                        except Exception:
+                            pass
+
+                    # 3. Print boot/tare logs from ESP32
+                    print(f"{Colors.DIM}[ESP32 Serial] {line}{Colors.RESET}")
             else:
                 while True:
                     tilt, vib, is_critical = self.read_sensors()
