@@ -223,7 +223,23 @@ class LoRaSensorNode:
                 MIN_TX_INTERVAL_SEC = 0.35  # At least 350ms between RF packets to clear airtime and prevent collisions
 
                 while True:
-                    line = self.esp32_ser.readline().decode("utf-8", errors="ignore").strip()
+                    if not self.esp32_ser:
+                        time.sleep(1.0)
+                        self._init_esp32_serial()
+                        continue
+
+                    try:
+                        line = self.esp32_ser.readline().decode("utf-8", errors="ignore").strip()
+                    except Exception as e:
+                        logger.warning(f"ESP32 serial connection interrupted ({e}). Auto-reconnecting in 1s...")
+                        try:
+                            self.esp32_ser.close()
+                        except Exception:
+                            pass
+                        self.esp32_ser = None
+                        time.sleep(1.0)
+                        continue
+
                     if not line:
                         continue
 
