@@ -77,20 +77,59 @@ static bool init_mpu6050(void) {
     return true;
 }
 
-// Automatic Resting Baseline Tare
-static float g_base_pitch = -999.0f;
-static float g_base_roll  = -999.0f;
-static float g_base_mag   = 1.0f;
-static float g_tare_pitch_acc = 0.0f;
-static float g_tare_roll_acc  = 0.0f;
-static float g_tare_mag_acc   = 0.0f;
-static int   g_tare_count = 0;
+// 3D Unit Vector Dot-Product Tare (Singularity-Free & Orientation-Independent)
+static float g_base_gx = 0.0f;
+static float g_base_gy = 0.0f;
+static float g_base_gz = 1.0f;
+static bool  g_tared   = false;
+
+static void calibrate_mpu6050_tare(void) {
+    if (!g_mpu6050_ok) return;
+
+    Serial.println("[TARE] Calibrating resting baseline vector in 3D space...");
+    float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+    int valid = 0;
+
+    for (int i = 0; i < 25; i++) {
+        Wire.beginTransmission(MPU6050_I2C_ADDR);
+        Wire.write(0x3B);
+        Wire.endTransmission(false);
+        Wire.requestFrom((uint8_t)MPU6050_I2C_ADDR, (size_t)6, true);
+
+        if (Wire.available() >= 6) {
+            int16_t ax = (Wire.read() << 8) | Wire.read();
+            int16_t ay = (Wire.read() << 8) | Wire.read();
+            int16_t az = (Wire.read() << 8) | Wire.read();
+            if (i >= 5) { // discard initial 5 settling samples
+                sum_x += (float)ax / 16384.0f;
+                sum_y += (float)ay / 16384.0f;
+                sum_z += (float)az / 16384.0f;
+                valid++;
+            }
+        }
+        delay(15);
+    }
+
+    if (valid > 0) {
+        float avg_x = sum_x / (float)valid;
+        float avg_y = sum_y / (float)valid;
+        float avg_z = sum_z / (float)valid;
+        float mag = sqrtf(avg_x * avg_x + avg_y * avg_y + avg_z * avg_z);
+        if (mag > 0.1f) {
+            g_base_gx = avg_x / mag;
+            g_base_gy = avg_y / mag;
+            g_base_gz = avg_z / mag;
+            g_tared = true;
+            Serial.printf("[TARE] Calibrated zero: base=(%.3f, %.3f, %.3f) | mag=%.3f\n",
+                          g_base_gx, g_base_gy, g_base_gz, mag);
+        }
+    }
+}
 
 static void read_mpu6050(float* out_tilt, float* out_vib) {
-    if (!g_mpu6050_ok) {
-        float jitter = ((float)(random(-10, 10))) / 100.0f;
-        *out_tilt = max(0.0f, g_cur_tilt + jitter);
-        *out_vib  = max(0.0f, g_cur_vib  + (jitter * 0.2f));
+    if (!g_mpu6050_ok || !g_tared) {
+        *out_tilt = 0.0f;
+        *out_vib  = 0.0f;
         return;
     }
 
@@ -110,38 +149,35 @@ static void read_mpu6050(float* out_tilt, float* out_vib) {
         float g_z = (float)az / 16384.0f;
 
         float cur_mag = sqrtf(g_x * g_x + g_y * g_y + g_z * g_z);
-
-        // Compute raw pitch and roll from gravity vector
-        float raw_pitch = atan2f(-g_x, sqrtf(g_y * g_y + g_z * g_z)) * (180.0f / 3.14159265f);
-        float raw_roll  = atan2f(g_y, g_z) * (180.0f / 3.14159265f);
-
-        // Auto-Tare first 10 samples at boot while board is resting
-        if (g_tare_count < 10) {
-            g_tare_pitch_acc += raw_pitch;
-            g_tare_roll_acc  += raw_roll;
-            g_tare_mag_acc   += cur_mag;
-            g_tare_count++;
-            if (g_tare_count == 10) {
-                g_base_pitch = g_tare_pitch_acc / 10.0f;
-                g_base_roll  = g_tare_roll_acc  / 10.0f;
-                g_base_mag   = g_tare_mag_acc   / 10.0f;
-                Serial.printf("[TARE] Calibrated zero: pitch=%.2f, roll=%.2f, mag=%.3f\n",
-                              g_base_pitch, g_base_roll, g_base_mag);
-            }
+        if (cur_mag < 0.1f) {
             *out_tilt = 0.0f;
             *out_vib  = 0.0f;
             return;
         }
 
-        // True angular deviation from resting tare position
-        float d_pitch = fabsf(raw_pitch - g_base_pitch);
-        float d_roll  = fabsf(raw_roll  - g_base_roll);
-        float total_tilt = sqrtf(d_pitch * d_pitch + d_roll * d_roll);
-        *out_tilt = total_tilt;
+        // Current unit gravity vector
+        float u_x = g_x / cur_mag;
+        float u_y = g_y / cur_mag;
+        float u_z = g_z / cur_mag;
+
+        // 3D Spatial Vector Dot Product: cos(theta) = u . u_base
+        // 100% Singularity-free: cannot jump 180 degrees like Euler atan2!
+        float cos_theta = (u_x * g_base_gx) + (u_y * g_base_gy) + (u_z * g_base_gz);
+        if (cos_theta > 1.0f) cos_theta = 1.0f;
+        if (cos_theta < -1.0f) cos_theta = -1.0f;
+
+        // True 3D angular deflection from resting position in degrees
+        float angle_deg = acosf(cos_theta) * (180.0f / 3.14159265f);
+
+        // Noise deadband: small thermal / ADC jitter (< 0.35 deg) clamped to 0
+        if (angle_deg < 0.35f) {
+            angle_deg = 0.0f;
+        }
+        *out_tilt = angle_deg;
 
         // Dynamic vibration deviation with sensor noise deadband filter
-        float diff = fabsf(cur_mag - g_base_mag);
-        if (diff < 0.012f) diff = 0.0f;
+        float diff = fabsf(cur_mag - 1.0f);
+        if (diff < 0.025f) diff = 0.0f;
         *out_vib = diff * 98.0665f; // in mm/s
     }
 }
@@ -180,8 +216,11 @@ void setup() {
         delay(1200); // Allow miners/technicians to view startup splash screen
     }
 
-    // 3. Initialize Physical MPU6050 Gyro/Accelerometer
+    // 3. Initialize Physical MPU6050 Gyro/Accelerometer & Calibrate Resting Tare
     g_mpu6050_ok = init_mpu6050();
+    if (g_mpu6050_ok) {
+        calibrate_mpu6050_tare();
+    }
 
     // 4. Initialize Ring Buffer & Feature Extraction Pipeline
     subsense_buffer_init(&g_win_buf);
