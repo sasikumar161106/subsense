@@ -37,7 +37,7 @@ logger = logging.getLogger("gateway-bridge")
 
 DEFAULT_PORT = "COM5"
 DEFAULT_BAUD = 115200
-DEFAULT_INGEST_URL = "http://localhost:8000/api/v1/ingest/telemetry"
+DEFAULT_INGEST_URL = "http://localhost:3001/api/v1/telemetry/broadcast"
 DEFAULT_BFF_URL = "http://localhost:3001/api/v1/telemetry/broadcast"
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "offline_queue.db")
 DEFAULT_RETRY_INTERVAL_SEC = 5.0
@@ -382,55 +382,49 @@ class GatewayBridge:
             self._worker_thread.join(timeout=2.0)
         logger.info("Gateway bridge stopped.")
 
-    def forward_reading(self, payload: Dict[str, Any]) -> bool:
-        """Attempt to POST canonical reading to AI/ML ingestion service and BFF Gateway."""
-        # 1. Forward to BFF Gateway for instant WebSocket UI broadcast
-        try:
-            bff_payload = {
-                "tenant_id": "OPCO-ECL-01",
-                "site_id": payload.get("site_id", "PANEL7-JHARIA"),
-                "node_id": payload.get("node_id", "SS-PANEL7-N042"),
-                "as_of": payload.get("timestamp"),
-                "readings": payload.get("readings", {}),
-                "anomaly_score": payload.get("anomaly_score", 0.08),
-                "siren_triggered": payload.get("siren_triggered", False),
-                "health": {
-                    "battery_pct": payload.get("node_health", {}).get("battery_percent", 85),
-                    "rssi_dbm": payload.get("node_health", {}).get("rssi_dbm", -70),
-                    "hop_count": payload.get("node_health", {}).get("hop_count", 1),
-                }
+    def to_bff_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Format canonical payload for Dashboard BFF broadcast endpoint."""
+        return {
+            "tenant_id": payload.get("tenant_id", "OPCO-ECL-01"),
+            "site_id": payload.get("site_id", "PANEL7-JHARIA"),
+            "node_id": payload.get("node_id", "SS-PANEL7-N042"),
+            "as_of": payload.get("timestamp"),
+            "readings": payload.get("readings", {}),
+            "anomaly_score": payload.get("anomaly_score", 0.08),
+            "siren_triggered": payload.get("siren_triggered", False),
+            "health": {
+                "battery_pct": payload.get("node_health", {}).get("battery_percent", 85),
+                "rssi_dbm": payload.get("node_health", {}).get("rssi_dbm", -70),
+                "hop_count": payload.get("node_health", {}).get("hop_count", 1),
             }
-            r_bff = requests.post(self.bff_url, json=bff_payload, timeout=1.5)
-            if r_bff.status_code == 200:
-                logger.info(f"[FORWARDED -> DASHBOARD WS] Node: {payload['node_id']} | Tilt: {payload['readings']['tilt_deg']}° | Vib: {payload['readings']['vibration_rms_mm_s']} mm/s")
-        except Exception as e:
-            logger.debug(f"[BFF BROADCAST ERR] {e}")
+        }
 
-        # 2. Forward to AI/ML Ingestion service
+    def forward_reading(self, payload: Dict[str, Any]) -> bool:
+        """Forward canonical reading directly to Dashboard BFF Gateway."""
+        bff_payload = self.to_bff_payload(payload)
         try:
-            resp = requests.post(self.ingest_url, json=payload, timeout=3.0)
-            if resp.status_code in (200, 201, 202):
+            r = requests.post(self.bff_url, json=bff_payload, timeout=2.0)
+            if r.status_code in (200, 201, 202):
                 logger.info(
-                    f"[FORWARDED -> INGESTION] Node: {payload['node_id']} | "
-                    f"Tilt: {payload['readings']['tilt_deg']}° | "
-                    f"Vib: {payload['readings']['vibration_rms_mm_s']} mm/s | "
-                    f"HTTP {resp.status_code}"
+                    f"[FORWARDED -> DASHBOARD WS] Node: {payload.get('node_id')} | "
+                    f"Tilt: {payload.get('readings', {}).get('tilt_deg')}° | "
+                    f"Vib: {payload.get('readings', {}).get('vibration_rms_mm_s')} mm/s"
                 )
                 return True
             else:
-                err_msg = f"HTTP {resp.status_code}: {resp.text[:100]}"
-                logger.warning(f"[INGESTION ERROR] {err_msg} -> buffering to offline queue")
+                err_msg = f"HTTP {r.status_code}: {r.text[:80]}"
+                logger.warning(f"[DASHBOARD ERROR] {err_msg} -> buffering to offline queue")
                 self.queue.enqueue(payload, err_msg)
                 return False
         except requests.RequestException as exc:
             err_str = str(exc)
             if "ConnectTimeoutError" in err_str or "timed out" in err_str:
-                err_msg = f"Timeout connecting to ingestion endpoint ({self.ingest_url})"
+                err_msg = f"Timeout connecting to Dashboard ({self.bff_url})"
             elif "ConnectionRefusedError" in err_str or "refused" in err_str:
-                err_msg = f"Connection refused at ingestion endpoint ({self.ingest_url})"
+                err_msg = f"Dashboard offline at {self.bff_url}"
             else:
-                err_msg = err_str[:120]
-            logger.warning(f"[INGESTION OFFLINE] {err_msg} -> buffering to offline queue")
+                err_msg = err_str[:80]
+            logger.warning(f"[DASHBOARD OFFLINE] {err_msg} -> buffering to offline queue")
             self.queue.enqueue(payload, err_msg)
             return False
 
@@ -450,7 +444,7 @@ class GatewayBridge:
         return results
 
     def _retry_worker(self) -> None:
-        """Background thread that continuously retries draining the SQLite offline queue."""
+        """Background thread that continuously retries draining the SQLite offline queue to Dashboard."""
         while self._running:
             try:
                 queue_size = self.queue.size()
@@ -460,13 +454,14 @@ class GatewayBridge:
                         if not self._running:
                             break
                         try:
-                            resp = requests.post(self.ingest_url, json=payload, timeout=3.0)
+                            bff_payload = self.to_bff_payload(payload)
+                            resp = requests.post(self.bff_url, json=bff_payload, timeout=2.0)
                             if resp.status_code in (200, 201, 202):
                                 self.queue.remove(item_id)
                                 logger.info(f"[OFFLINE REPLAY SUCCESS] Dispatched queued packet ID {item_id} (Node: {payload.get('node_id')})")
                             elif resp.status_code == 400:
                                 self.queue.remove(item_id)
-                                logger.warning(f"[OFFLINE DROP] Dropped unrecoverable packet ID {item_id} (HTTP 400: {resp.text[:80]})")
+                                logger.warning(f"[OFFLINE DROP] Dropped invalid packet ID {item_id}")
                             else:
                                 self.queue.increment_retry(item_id, f"HTTP {resp.status_code}")
                                 break  # Stop batch on temporary failure to maintain FIFO order

@@ -38,8 +38,9 @@ LORA_SETTINGS = {
 }
 
 # SubSense Platform Backend Endpoints
-AIML_INGEST_URL = os.environ.get("AIML_INGEST_URL", "http://localhost:8000/api/v1/ingest/telemetry")
-BFF_BROADCAST_URL = os.environ.get("BFF_BROADCAST_URL", "http://localhost:3001/api/v1/telemetry/broadcast")
+DASHBOARD_BFF_URL = os.environ.get("BFF_BROADCAST_URL") or os.environ.get("DASHBOARD_URL") or "http://localhost:3001/api/v1/telemetry/broadcast"
+BFF_BROADCAST_URL = DASHBOARD_BFF_URL
+AIML_INGEST_URL = DASHBOARD_BFF_URL  # Backward compatibility alias
 
 # Default Metadata
 DEFAULT_NODE_ID = os.environ.get("NODE_ID", "SS-PANEL7-N042")

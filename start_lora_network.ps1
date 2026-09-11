@@ -25,7 +25,7 @@ if ($DetectedPorts) {
 
 if (-not $Role) {
     Write-Host "`nSelect LoRa Execution Mode:" -ForegroundColor White
-    Write-Host " [1] Standalone LoRa Surface Gateway Node (Direct Ingest -> AI/ML & BFF)" -ForegroundColor Green
+    Write-Host " [1] Standalone LoRa Surface Gateway Node (Direct Ingest -> Dashboard)" -ForegroundColor Green
     Write-Host " [2] Surface Gateway Bridge (Direct LoRa mode @ 9600 baud)" -ForegroundColor Green
     Write-Host " [3] Surface Gateway Bridge (ESP32 USB Serial mode @ 115200 baud)" -ForegroundColor Green
     Write-Host " [4] Standalone LoRa Underground Sensor Node (Field Transmitter / Simulation)" -ForegroundColor Green
@@ -76,8 +76,8 @@ switch ($Choice) {
         python "$WorkspaceRoot\edge\scripts\diagnose_lora.py" --port $Port --freq $Freq
     }
     "8" {
-        Write-Host "`n[1/2] Starting SubSense Backend and Dashboard..." -ForegroundColor Yellow
-        Start-Process powershell -ArgumentList "-File", "`"$WorkspaceRoot\start_subsense_services.ps1`""
+        Write-Host "`n[1/2] Starting SubSense Dashboard..." -ForegroundColor Yellow
+        Start-Process powershell -ArgumentList "-File", "`"$WorkspaceRoot\start_dashboard.ps1`""
         Write-Host "[2/2] Starting Surface LoRa Gateway on $Port..." -ForegroundColor Green
         python "$WorkspaceRoot\edge\lora_nodes\main.py" --mode gateway --port $Port --freq $Freq
     }
