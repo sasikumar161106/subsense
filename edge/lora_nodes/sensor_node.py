@@ -82,18 +82,13 @@ class LoRaSensorNode:
         try:
             import serial
             logger.info(f"Connecting to ESP32 Sensor Node on {self.esp32_port} @ 115200 baud...")
-            self.esp32_ser = serial.Serial(
-                port=self.esp32_port,
-                baudrate=115200,
-                timeout=1.0,
-                rtscts=False,
-                dsrdtr=False,
-            )
-            try:
-                self.esp32_ser.dtr = False
-                self.esp32_ser.rts = False
-            except Exception:
-                pass
+            self.esp32_ser = serial.Serial()
+            self.esp32_ser.port = self.esp32_port
+            self.esp32_ser.baudrate = 115200
+            self.esp32_ser.timeout = 1.0
+            self.esp32_ser.dtr = False
+            self.esp32_ser.rts = False
+            self.esp32_ser.open()
             logger.info(f"Connected to ESP32 on {self.esp32_port}")
         except Exception as e:
             logger.error(f"Failed to connect to ESP32 on {self.esp32_port}: {e}")
@@ -221,6 +216,7 @@ class LoRaSensorNode:
                 print(f"{Colors.GREEN}Listening for real-time telemetry from ESP32 on {self.esp32_port}...{Colors.RESET}\n")
                 last_tx_time = 0.0
                 MIN_TX_INTERVAL_SEC = 0.35  # At least 350ms between RF packets to clear airtime and prevent collisions
+                consecutive_errors = 0
 
                 while True:
                     if not self.esp32_ser:
@@ -230,14 +226,18 @@ class LoRaSensorNode:
 
                     try:
                         line = self.esp32_ser.readline().decode("utf-8", errors="ignore").strip()
+                        consecutive_errors = 0
                     except Exception as e:
-                        logger.warning(f"ESP32 serial connection interrupted ({e}). Auto-reconnecting in 1s...")
-                        try:
-                            self.esp32_ser.close()
-                        except Exception:
-                            pass
-                        self.esp32_ser = None
-                        time.sleep(1.0)
+                        consecutive_errors += 1
+                        time.sleep(0.15)
+                        if consecutive_errors >= 6:
+                            logger.warning(f"ESP32 serial connection lost ({e}). Re-opening in 1s...")
+                            try:
+                                self.esp32_ser.close()
+                            except Exception:
+                                pass
+                            self.esp32_ser = None
+                            time.sleep(1.0)
                         continue
 
                     if not line:
