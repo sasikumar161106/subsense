@@ -51,6 +51,8 @@ class LoRaRelayNode:
         self.pings_received = 0
         self.packets_forwarded = 0
         self.dedup_cache: Dict[str, float] = {}
+        self.rx_buffer = ""
+        self.rx_buffer_last_time = time.time()
 
         self._init_hardware()
 
@@ -73,6 +75,25 @@ class LoRaRelayNode:
         expired = [k for k, t in self.dedup_cache.items() if (now - t) > DEDUP_CACHE_TTL_SEC]
         for k in expired:
             del self.dedup_cache[k]
+
+    def handle_incoming_chunk(self, chunk: str, rssi: int):
+        now = time.time()
+        if now - self.rx_buffer_last_time > 4.0:
+            self.rx_buffer = ""
+        self.rx_buffer_last_time = now
+
+        self.rx_buffer += chunk
+
+        while "{" in self.rx_buffer and "}" in self.rx_buffer:
+            s_idx = self.rx_buffer.find("{")
+            e_idx = self.rx_buffer.find("}", s_idx)
+            if e_idx == -1:
+                self.rx_buffer = self.rx_buffer[s_idx:]
+                break
+
+            json_str = self.rx_buffer[s_idx:e_idx+1]
+            self.rx_buffer = self.rx_buffer[e_idx+1:]
+            self.process_packet(json_str, rssi)
 
     def process_packet(self, message: str, rssi: int) -> bool:
         self.pings_received += 1
@@ -134,8 +155,8 @@ class LoRaRelayNode:
                 if self.lora:
                     msg, rssi = self.lora.receive()
                     if msg:
-                        self.process_packet(msg, rssi)
-                time.sleep(0.05)
+                        self.handle_incoming_chunk(msg, rssi)
+                time.sleep(0.02)
         except KeyboardInterrupt:
             print(f"\n[RELAY] Shutting down. Received: {self.pings_received}, Forwarded: {self.packets_forwarded}")
         finally:

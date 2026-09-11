@@ -67,6 +67,8 @@ class LoRaGatewayNode:
         self.lora: Optional[sx126x] = None
         self.total_received = 0
         self.total_dispatched = 0
+        self.rx_buffer = ""
+        self.rx_buffer_last_time = time.time()
 
         # Initialize Gateway Bridge for resilient offline queue & HTTP dispatch
         default_db = os.path.join(BASE_DIR, "gateway-bridge", "offline_queue.db")
@@ -97,14 +99,46 @@ class LoRaGatewayNode:
             logger.warning(f"Could not connect to LoRa module on {self.port}: {e}")
             logger.warning("Operating in listening mode (will retry on incoming data).")
 
-    def process_incoming_packet(self, raw_msg: str, rssi: Optional[int]) -> bool:
+    def handle_incoming_chunk(self, chunk: str, rssi: Optional[int]):
+        """
+        Reassemble streamed sub-packet chunks into complete, valid JSON packets.
+        """
+        now = time.time()
+        # If buffer was idle for more than 4s, clear stale fragments
+        if now - self.rx_buffer_last_time > 4.0:
+            self.rx_buffer = ""
+        self.rx_buffer_last_time = now
+
+        self.rx_buffer += chunk
+
+        # Look for complete JSON objects in rx_buffer
+        while "{" in self.rx_buffer and "}" in self.rx_buffer:
+            s_idx = self.rx_buffer.find("{")
+            e_idx = self.rx_buffer.find("}", s_idx)
+            if e_idx == -1:
+                self.rx_buffer = self.rx_buffer[s_idx:]
+                break
+
+            json_str = self.rx_buffer[s_idx:e_idx+1]
+            self.rx_buffer = self.rx_buffer[e_idx+1:]
+
+            try:
+                data = json.loads(json_str)
+                self.process_incoming_packet(data, rssi)
+            except Exception as e:
+                logger.debug(f"Incomplete JSON fragment: {json_str[:60]}... ({e})")
+
+    def process_incoming_packet(self, raw_input, rssi: Optional[int]) -> bool:
         self.total_received += 1
 
-        try:
-            data = json.loads(raw_msg)
-        except Exception:
-            logger.warning(f"Malformed packet received: {raw_msg[:80]}")
-            return False
+        if isinstance(raw_input, str):
+            try:
+                data = json.loads(raw_input)
+            except Exception:
+                logger.warning(f"Malformed packet received: {raw_input[:80]}")
+                return False
+        else:
+            data = dict(raw_input)
 
         # Stamp authentic hardware RSSI if received
         if rssi is not None:
@@ -161,8 +195,8 @@ class LoRaGatewayNode:
                 if self.lora:
                     msg, rssi = self.lora.receive()
                     if msg:
-                        self.process_incoming_packet(msg, rssi)
-                time.sleep(0.05)
+                        self.handle_incoming_chunk(msg, rssi)
+                time.sleep(0.02)
         except KeyboardInterrupt:
             print(f"\n\n[GATEWAY] Shutting down. Total: {self.total_received}, Dispatched: {self.total_dispatched}")
         finally:
