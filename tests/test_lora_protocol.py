@@ -252,5 +252,79 @@ class TestLoraSx126xProtocol(unittest.TestCase):
         self.assertFalse(canonical["sensor_availability"]["crack"])
 
 
+    def test_compact_lora_packet_to_canonical_mapping(self):
+        """
+        Verify that ultra-compact high-speed LoRa packets (<130B) expand accurately
+        into the Canonical SubSense SensorReading contract.
+        """
+        compact_pkt = {
+            "node": "SS-PANEL7-N042",
+            "tilt": 61.77,
+            "vib": 2.45,
+            "bat": 94,
+            "siren": True,
+            "score": 0.95,
+            "seq": 21,
+            "ts": "2026-09-11T12:30:00Z"
+        }
+
+        canonical = to_canonical(compact_pkt)
+
+        self.assertEqual(canonical["node_id"], "SS-PANEL7-N042")
+        self.assertEqual(canonical["readings"]["tilt_deg"], 61.77)
+        self.assertEqual(canonical["readings"]["vibration_rms_mm_s"], 2.45)
+        self.assertTrue(canonical["siren_triggered"])
+        self.assertEqual(canonical["anomaly_score"], 0.95)
+        self.assertEqual(canonical["node_health"]["battery_percent"], 94)
+        self.assertIsNone(canonical["readings"]["displacement_mm"])
+        self.assertIsNone(canonical["readings"]["crack_index"])
+        self.assertFalse(canonical["sensor_availability"]["displacement"])
+        self.assertFalse(canonical["sensor_availability"]["crack"])
+
+    def test_lora_payload_within_240_byte_hardware_mtu(self):
+        """
+        Verify that generated LoRa telemetry packets are strictly < 240 bytes
+        to prevent hardware packet splitting, radio collisions, and corrupted fragments.
+        """
+        from edge.lora_nodes.sensor_node import LoRaSensorNode
+
+        with patch("serial.Serial"):
+            node = LoRaSensorNode(node_id="SS-PANEL7-N042", port="COM_MOCK")
+            # Build packet with maximum float length
+            payload_str = node.build_telemetry_packet(61.77123, 14.89123, True)
+            self.assertLess(len(payload_str.encode("utf-8")), 240)
+            data = json.loads(payload_str)
+            self.assertEqual(data["node_id"], "SS-PANEL7-N042")
+            self.assertEqual(data["tilt_current"], 61.771)
+            self.assertEqual(data["vibration_rms"], 14.891)
+            self.assertTrue(data["siren_triggered"])
+
+    def test_gateway_backwards_stream_json_extraction(self):
+        """
+        Verify that gateway backwards-scanning stream parser successfully recovers valid JSON
+        even when preceded by noise or partial packet fragments.
+        """
+        from edge.lora_nodes.gateway_node import LoRaGatewayNode
+
+        with patch("serial.Serial"):
+            gw = LoRaGatewayNode(port="COM_MOCK")
+            processed = []
+            gw.process_incoming_packet = lambda d, r: processed.append(d)
+
+            # 1. Noise fragment followed by complete JSON
+            noise_and_json = 'corrupted_fragment{"node":"SS-01","tilt":27.5,"vib":0.0}'
+            gw.handle_incoming_chunk(noise_and_json, rssi=-58)
+            self.assertEqual(len(processed), 1)
+            self.assertEqual(processed[0]["tilt"], 27.5)
+
+            # 2. Chunked JSON split across two calls
+            gw.handle_incoming_chunk('{"node":"SS-02",', rssi=-60)
+            self.assertEqual(len(processed), 1)  # Still 1, waiting for closing
+            gw.handle_incoming_chunk('"tilt":61.8,"vib":0.1}', rssi=-60)
+            self.assertEqual(len(processed), 2)  # Now 2
+            self.assertEqual(processed[1]["node"], "SS-02")
+            self.assertEqual(processed[1]["tilt"], 61.8)
+
+
 if __name__ == "__main__":
     unittest.main()

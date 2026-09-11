@@ -14,7 +14,7 @@ import logging
 import os
 import sys
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 # Include driver and config paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,32 +84,47 @@ class LoRaRelayNode:
 
         self.rx_buffer += chunk
 
-        while "{" in self.rx_buffer and "}" in self.rx_buffer:
+        while "{" in self.rx_buffer:
             s_idx = self.rx_buffer.find("{")
-            e_idx = self.rx_buffer.find("}", s_idx)
-            if e_idx == -1:
+            if s_idx > 0:
                 self.rx_buffer = self.rx_buffer[s_idx:]
+                s_idx = 0
+
+            found = False
+            for pos in range(len(self.rx_buffer) - 1, 0, -1):
+                if self.rx_buffer[pos] == "}":
+                    candidate = self.rx_buffer[:pos + 1]
+                    try:
+                        data = json.loads(candidate)
+                        self.process_packet(data, rssi)
+                        self.rx_buffer = self.rx_buffer[pos + 1:]
+                        found = True
+                        break
+                    except Exception:
+                        continue
+            if not found:
+                if len(self.rx_buffer) > 1024:
+                    self.rx_buffer = self.rx_buffer[-256:]
                 break
 
-            json_str = self.rx_buffer[s_idx:e_idx+1]
-            self.rx_buffer = self.rx_buffer[e_idx+1:]
-            self.process_packet(json_str, rssi)
-
-    def process_packet(self, message: str, rssi: int) -> bool:
+    def process_packet(self, message: Union[str, dict], rssi: int) -> bool:
         self.pings_received += 1
         now = time.time()
         self._clean_dedup_cache(now)
 
         # Parse payload
-        try:
-            data = json.loads(message)
-        except Exception:
-            # Fallback for plain text format
-            data = {"raw": message, "node_id": "UNKNOWN", "seq": self.pings_received}
+        if isinstance(message, dict):
+            data = dict(message)
+        else:
+            try:
+                data = json.loads(message)
+            except Exception:
+                # Fallback for plain text format
+                data = {"raw": message, "node_id": "UNKNOWN", "seq": self.pings_received}
 
-        node_id = data.get("node_id", "UNKNOWN")
+        node_id = data.get("node_id") or data.get("node") or "UNKNOWN"
         seq = data.get("seq", self.pings_received)
-        hop_count = int(data.get("hop_count", 0))
+        hop_count = int(data.get("hop_count", data.get("hops", 0)))
 
         # Check loop / hop threshold
         if hop_count >= MAX_HOPS:
@@ -133,7 +148,7 @@ class LoRaRelayNode:
         fwd_payload = json.dumps(fwd_data, separators=(',', ':'))
 
         # Retransmit over LoRa
-        time.sleep(0.05)  # Avoid collision
+        time.sleep(0.02)  # Fast turnaround
         if self.lora:
             self.lora.send(fwd_payload, target_addr=0xFFFF, channel=15)
 
@@ -156,7 +171,7 @@ class LoRaRelayNode:
                     msg, rssi = self.lora.receive()
                     if msg:
                         self.handle_incoming_chunk(msg, rssi)
-                time.sleep(0.02)
+                time.sleep(0.01)
         except KeyboardInterrupt:
             print(f"\n[RELAY] Shutting down. Received: {self.pings_received}, Forwarded: {self.packets_forwarded}")
         finally:

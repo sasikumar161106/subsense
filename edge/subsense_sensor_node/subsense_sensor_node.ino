@@ -353,16 +353,14 @@ void loop() {
 
     subsense_display_update_health(&disp_data);
 
-    // 7. Transmit Canonical Telemetry over WiFi Mesh
-    // Format JSON matching exact gateway bridge expectation
-    char tx_payload[384];
+    // 7. Transmit Canonical Telemetry over LoRa Mesh / USB UART
+    // Format compact JSON (<120 bytes) to maximize throughput and eliminate LoRa fragmentation
+    char tx_payload[256];
     snprintf(tx_payload, sizeof(tx_payload),
-        "{\"node_id\":\"%s\",\"site_id\":\"%s\",\"tenant_id\":\"%s\","
-        "\"tilt_current\":%.3f,\"vibration_rms\":%.3f,\"battery_percent\":%d,"
-        "\"rssi_dbm\":%d,\"hop_count\":0,\"anomaly_score\":%.3f,"
-        "\"siren_triggered\":%s,\"timestamp\":\"%s\"}",
-        NODE_ID, SITE_ID, TENANT_ID,
-        tilt, vib, disp_data.battery_percent, disp_data.rssi_dbm,
+        "{\"node\":\"%s\",\"tilt\":%.3f,\"vib\":%.3f,\"bat\":%d,"
+        "\"score\":%.3f,\"siren\":%s,\"ts\":\"%s\"}",
+        NODE_ID,
+        tilt, vib, disp_data.battery_percent,
         event.anomaly_score, g_siren_active ? "true" : "false", ts_str
     );
 
@@ -377,6 +375,6 @@ void loop() {
     Serial.printf("[SENSOR NODE] Tilt: %5.2f deg | Vib: %4.2f mm/s | ML Score: %4.2f | Health: %s | LoRa Tx: %s\n",
                   tilt, vib, event.anomaly_score, disp_data.status_text, tx_ok ? "OK" : "FAIL");
 
-    // Sampling cadence: 1000 ms (1 Hz)
-    delay(1000);
+    // Sampling cadence: 500 ms (2 Hz high-frequency monitoring)
+    delay(500);
 }

@@ -58,7 +58,7 @@ class LoRaSensorNode:
         node_id: str = DEFAULT_NODE_ID,
         port: str = SERIAL_PORT,
         freq: int = LORA_SETTINGS["FREQUENCY"],
-        interval: float = 2.0,
+        interval: float = 1.0,
         simulate_anomaly: bool = False,
         esp32_port: Optional[str] = None,
     ):
@@ -83,8 +83,8 @@ class LoRaSensorNode:
             import serial
             logger.info(f"Connecting to ESP32 Sensor Node on {self.esp32_port} @ 115200 baud...")
             self.esp32_ser = serial.Serial(
-                self.esp32_port,
-                115200,
+                port=self.esp32_port,
+                baudrate=115200,
                 timeout=1.0,
                 rtscts=False,
                 dsrdtr=False,
@@ -134,22 +134,20 @@ class LoRaSensorNode:
 
     def build_telemetry_packet(self, tilt: float, vib: float, is_critical: bool) -> str:
         """
-        Build SubSense canonical JSON telemetry payload matching edge firmware contract.
+        Build compact SubSense LoRa telemetry payload (< 200 bytes).
+        Guaranteed to fit within the SX1262 240-byte hardware packet limit,
+        preventing radio-level packet splitting, collisions, and corrupted fragments.
         """
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         self.battery_percent = max(15, self.battery_percent - (1 if self.packet_count % 100 == 0 else 0))
 
         payload = {
             "node_id": self.node_id,
-            "site_id": DEFAULT_SITE_ID,
-            "tenant_id": DEFAULT_TENANT_ID,
-            "zone_id": DEFAULT_ZONE_ID,
-            "tilt_current": tilt,
-            "vibration_rms": vib,
-            "battery_percent": self.battery_percent,
-            "rssi_dbm": -55,
+            "tilt_current": round(float(tilt), 3),
+            "vibration_rms": round(float(vib), 3),
+            "battery_percent": int(self.battery_percent),
             "hop_count": 0,
-            "siren_triggered": is_critical,
+            "siren_triggered": bool(is_critical),
             "anomaly_score": round(0.95 if is_critical else 0.08, 3),
             "seq": self.packet_count,
             "timestamp": now_iso,
@@ -172,11 +170,22 @@ class LoRaSensorNode:
         status_color = Colors.RED if is_critical else Colors.GREEN
         alert_icon = "🚨 CRITICAL" if is_critical else "📡 NOMINAL"
         try:
-            tilt_val = payload_str.split('\"tilt_current\":')[1].split(',')[0]
+            if '\"tilt\":' in payload_str:
+                tilt_val = payload_str.split('\"tilt\":')[1].split(',')[0].split('}')[0]
+            elif '\"tilt_current\":' in payload_str:
+                tilt_val = payload_str.split('\"tilt_current\":')[1].split(',')[0].split('}')[0]
+            else:
+                tilt_val = "0.0"
         except Exception:
             tilt_val = "0.0"
+
         try:
-            vib_val = payload_str.split('\"vibration_rms\":')[1].split(',')[0]
+            if '\"vib\":' in payload_str:
+                vib_val = payload_str.split('\"vib\":')[1].split(',')[0].split('}')[0]
+            elif '\"vibration_rms\":' in payload_str:
+                vib_val = payload_str.split('\"vibration_rms\":')[1].split(',')[0].split('}')[0]
+            else:
+                vib_val = "0.0"
         except Exception:
             vib_val = "0.0"
 
@@ -210,10 +219,20 @@ class LoRaSensorNode:
         try:
             if self.esp32_ser:
                 print(f"{Colors.GREEN}Listening for real-time telemetry from ESP32 on {self.esp32_port}...{Colors.RESET}\n")
+                last_tx_time = 0.0
+                MIN_TX_INTERVAL_SEC = 0.35  # At least 350ms between RF packets to clear airtime and prevent collisions
+
                 while True:
                     line = self.esp32_ser.readline().decode("utf-8", errors="ignore").strip()
                     if not line:
                         continue
+
+                    now = time.time()
+                    extracted = False
+                    tilt = 0.0
+                    vib = 0.0
+                    is_critical = False
+                    battery = self.battery_percent
 
                     # 1. Look for embedded JSON object in line
                     s_idx = line.find("{")
@@ -223,24 +242,33 @@ class LoRaSensorNode:
                         try:
                             data = json.loads(json_str)
                             tilt = float(data.get("tilt_current", data.get("tilt", 0.0)))
-                            is_critical = bool(data.get("siren_triggered", False)) or (tilt >= PHYSICAL_TILT_CRITICAL_DEG)
-                            self.send_packet(json_str, is_critical)
-                            continue
+                            vib = float(data.get("vibration_rms", data.get("vibration", data.get("vib", 0.0))))
+                            is_critical = bool(data.get("siren_triggered", data.get("siren", False))) or (tilt >= PHYSICAL_TILT_CRITICAL_DEG)
+                            battery = int(data.get("battery_percent", data.get("bat", self.battery_percent)))
+                            extracted = True
                         except Exception:
                             pass
 
                     # 2. Look for human-readable "[SENSOR NODE] Tilt: ... deg | Vib: ... mm/s"
-                    m = re.search(r"Tilt:\s*([0-9.-]+)\s*deg.*?Vib:\s*([0-9.-]+)", line, re.IGNORECASE)
-                    if m:
-                        try:
-                            tilt = float(m.group(1))
-                            vib = float(m.group(2))
-                            is_critical = tilt >= PHYSICAL_TILT_CRITICAL_DEG
+                    if not extracted:
+                        m = re.search(r"Tilt:\s*([0-9.-]+)\s*deg.*?Vib:\s*([0-9.-]+)", line, re.IGNORECASE)
+                        if m:
+                            try:
+                                tilt = float(m.group(1))
+                                vib = float(m.group(2))
+                                is_critical = tilt >= PHYSICAL_TILT_CRITICAL_DEG
+                                extracted = True
+                            except Exception:
+                                pass
+
+                    if extracted:
+                        # Deduplicate & rate-limit to ensure safe, maximum-speed RF delivery
+                        if now - last_tx_time >= MIN_TX_INTERVAL_SEC:
+                            last_tx_time = now
+                            self.battery_percent = battery
                             packet = self.build_telemetry_packet(tilt, vib, is_critical)
                             self.send_packet(packet, is_critical)
-                            continue
-                        except Exception:
-                            pass
+                        continue
 
                     # 3. Print boot/tare logs from ESP32
                     print(f"{Colors.DIM}[ESP32 Serial] {line}{Colors.RESET}")
@@ -282,7 +310,7 @@ if __name__ == "__main__":
     parser.add_argument("--id", type=str, default=DEFAULT_NODE_ID, help="Node ID")
     parser.add_argument("--port", type=str, default=SERIAL_PORT, help="Serial port for LoRa SX126x module")
     parser.add_argument("--freq", type=int, default=LORA_SETTINGS["FREQUENCY"], help="Frequency in MHz")
-    parser.add_argument("--interval", type=float, default=2.0, help="Transmission interval in seconds")
+    parser.add_argument("--interval", type=float, default=1.0, help="Transmission interval in seconds")
     parser.add_argument("--anomaly", action="store_true", help="Simulate physical tilt hazard (>4.0 deg)")
     parser.add_argument("--esp32-port", type=str, default=None, help="Serial port of attached ESP32 (e.g. /dev/ttyUSB0 or COM3)")
 

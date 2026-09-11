@@ -111,22 +111,29 @@ class LoRaGatewayNode:
 
         self.rx_buffer += chunk
 
-        # Look for complete JSON objects in rx_buffer
-        while "{" in self.rx_buffer and "}" in self.rx_buffer:
+        while "{" in self.rx_buffer:
             s_idx = self.rx_buffer.find("{")
-            e_idx = self.rx_buffer.find("}", s_idx)
-            if e_idx == -1:
+            if s_idx > 0:
                 self.rx_buffer = self.rx_buffer[s_idx:]
+                s_idx = 0
+
+            found = False
+            # Scan backwards from the end for the closing '}' that forms a complete valid JSON object
+            for pos in range(len(self.rx_buffer) - 1, 0, -1):
+                if self.rx_buffer[pos] == "}":
+                    candidate = self.rx_buffer[:pos + 1]
+                    try:
+                        data = json.loads(candidate)
+                        self.process_incoming_packet(data, rssi)
+                        self.rx_buffer = self.rx_buffer[pos + 1:]
+                        found = True
+                        break
+                    except Exception:
+                        continue
+            if not found:
+                if len(self.rx_buffer) > 1024:
+                    self.rx_buffer = self.rx_buffer[-256:]
                 break
-
-            json_str = self.rx_buffer[s_idx:e_idx+1]
-            self.rx_buffer = self.rx_buffer[e_idx+1:]
-
-            try:
-                data = json.loads(json_str)
-                self.process_incoming_packet(data, rssi)
-            except Exception as e:
-                logger.debug(f"Incomplete JSON fragment: {json_str[:60]}... ({e})")
 
     def process_incoming_packet(self, raw_input, rssi: Optional[int]) -> bool:
         self.total_received += 1
@@ -152,6 +159,15 @@ class LoRaGatewayNode:
         vib = canonical["readings"].get("vibration_rms_mm_s")
         hop = canonical["node_health"].get("hop_count", 0)
         siren = canonical.get("siren_triggered", False)
+
+        # Immediate real-time log
+        logger.info(
+            f"⚡ [RX PACKET #{self.total_received}] Node: {node_id} | "
+            f"Tilt: {tilt if tilt is not None else 0.0:.3f}° | "
+            f"Vib: {vib if vib is not None else 0.0:.3f} mm/s | "
+            f"RSSI: {rssi if rssi is not None else 'N/A'} dBm | "
+            f"Siren: {siren}"
+        )
 
         # Dispatch to AI/ML & BFF
         ok = self.bridge.forward_reading(canonical)
@@ -196,7 +212,7 @@ class LoRaGatewayNode:
                     msg, rssi = self.lora.receive()
                     if msg:
                         self.handle_incoming_chunk(msg, rssi)
-                time.sleep(0.02)
+                time.sleep(0.01)
         except KeyboardInterrupt:
             print(f"\n\n[GATEWAY] Shutting down. Total: {self.total_received}, Dispatched: {self.total_dispatched}")
         finally:

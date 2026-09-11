@@ -265,31 +265,46 @@ class sx126x:
 
         packet = bytes([h_addr, l_addr, ch]) + data
         self.ser.write(packet)
-        time.sleep(0.05)
+        try:
+            self.ser.flush()
+        except Exception:
+            pass
+        time.sleep(0.02)
 
     def receive(self) -> Tuple[Optional[str], Optional[int]]:
         """
         Receive data from LoRa module.
-        Data format: [PAYLOAD...] + [RSSI_BYTE]
+        Data format: [PAYLOAD...] + [RSSI_BYTE (optional)]
+        Uses inter-character silence detection to ensure complete frame capture without fragmentation.
         Returns (payload_str, rssi_dbm)
         """
         if self.ser.in_waiting > 0:
-            time.sleep(0.1)  # Wait for full packet
-            r_buff = self.ser.read(self.ser.in_waiting)
+            r_buff = bytearray()
+            # Accumulate bytes until no new bytes arrive for at least 30ms (inter-frame silence)
+            while True:
+                waiting = self.ser.in_waiting
+                if waiting > 0:
+                    r_buff.extend(self.ser.read(waiting))
+                time.sleep(0.025)
+                if self.ser.in_waiting == 0:
+                    break
 
-            if len(r_buff) < 2:
+            if len(r_buff) == 0:
                 return None, None
 
-            # RSSI is the last byte appended by E22 when packet RSSI is enabled
-            # Formula: -(256 - value) dBm
-            raw_rssi = r_buff[-1]
-            rssi_val = -(256 - raw_rssi)
+            # If RSSI byte is enabled, the E22 module appends 1 byte at the end of the RF packet
+            if self.rssi and len(r_buff) >= 2:
+                raw_rssi = r_buff[-1]
+                rssi_val = -(256 - raw_rssi)
+                msg_data = bytes(r_buff[:-1])
+            else:
+                rssi_val = None
+                msg_data = bytes(r_buff)
 
             try:
-                msg_data = r_buff[:-1]
                 msg = msg_data.decode("utf-8", errors="ignore")
             except Exception:
-                msg = str(r_buff[:-1])
+                msg = str(msg_data)
 
             return msg, rssi_val
         return None, None

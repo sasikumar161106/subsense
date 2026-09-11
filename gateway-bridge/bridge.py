@@ -69,9 +69,9 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Extract node and tenant/site identifiers
     node_id = raw.get("node_id") or raw.get("node") or "SS-PANEL7-N042"
-    site_id = raw.get("site_id") or "PANEL7-JHARIA"
-    tenant_id = raw.get("tenant_id") or "tenant-jharia-01"
-    zone_id = raw.get("zone_id") or "PANEL-1-ZONE-01"
+    site_id = raw.get("site_id") or raw.get("site") or "PANEL7-JHARIA"
+    tenant_id = raw.get("tenant_id") or raw.get("tenant") or "tenant-jharia-01"
+    zone_id = raw.get("zone_id") or raw.get("zone") or "PANEL-1-ZONE-01"
 
     # Extract timestamp from various possible firmware keys
     raw_ts = (
@@ -82,7 +82,7 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     )
     timestamp_iso = format_timestamp(raw_ts)
 
-    # Extract tilt (firmware uses 'tilt_current', 'tilt', or 'readings.tilt_deg')
+    # Extract tilt (supports 'tilt_current', 'tilt', or 'readings.tilt_deg')
     tilt_val: Optional[float] = None
     if "tilt_current" in raw and raw["tilt_current"] is not None:
         try:
@@ -102,7 +102,7 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
             except (ValueError, TypeError):
                 tilt_val = None
 
-    # Extract vibration (firmware uses 'vibration_rms', 'vib', or 'readings.vibration_rms_mm_s')
+    # Extract vibration (supports 'vibration_rms', 'vibration', 'vib', or 'readings.vibration_rms_mm_s')
     vib_val: Optional[float] = None
     if "vibration_rms" in raw and raw["vibration_rms"] is not None:
         try:
@@ -114,19 +114,24 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
             vib_val = round(float(raw["vibration"]), 4)
         except (ValueError, TypeError):
             vib_val = None
+    elif "vib" in raw and raw["vib"] is not None:
+        try:
+            vib_val = round(float(raw["vib"]), 4)
+        except (ValueError, TypeError):
+            vib_val = None
     elif "readings" in raw and isinstance(raw["readings"], dict):
-        sub = raw["readings"].get("vibration_rms_mm_s") or raw["readings"].get("vibration")
+        sub = raw["readings"].get("vibration_rms_mm_s") or raw["readings"].get("vibration") or raw["readings"].get("vib")
         if sub is not None:
             try:
                 vib_val = round(float(sub), 4)
             except (ValueError, TypeError):
                 vib_val = None
 
-    # Node health metadata
+    # Node health metadata (supports 'battery_percent', 'battery', 'bat')
     health_dict = raw.get("node_health") if isinstance(raw.get("node_health"), dict) else {}
-    battery_pct = raw.get("battery_percent") or health_dict.get("battery_percent") or 94
-    rssi_dbm = raw.get("rssi_dbm") or health_dict.get("rssi_dbm") or -68
-    hop_count = raw.get("hop_count") or health_dict.get("hop_count") or 1
+    battery_pct = raw.get("battery_percent") or raw.get("battery") or raw.get("bat") or health_dict.get("battery_percent") or 94
+    rssi_dbm = raw.get("rssi_dbm") or raw.get("rssi") or health_dict.get("rssi_dbm") or -68
+    hop_count = raw.get("hop_count") or raw.get("hops") or health_dict.get("hop_count") or 0
 
     try:
         battery_pct = int(battery_pct)
@@ -141,7 +146,25 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     try:
         hop_count = int(hop_count)
     except (ValueError, TypeError):
-        hop_count = 1
+        hop_count = 0
+
+    # Extract anomaly score (supports 'anomaly_score', 'score', 'anomaly')
+    raw_anomaly = raw.get("anomaly_score") if raw.get("anomaly_score") is not None else raw.get("score")
+    if raw_anomaly is None:
+        raw_anomaly = raw.get("anomaly")
+    if raw_anomaly is not None:
+        try:
+            anomaly_score = float(raw_anomaly)
+        except (ValueError, TypeError):
+            anomaly_score = 0.05 if (tilt_val or 0.0) < 4.0 else 0.95
+    else:
+        anomaly_score = 0.05 if (tilt_val or 0.0) < 4.0 else 0.95
+
+    # Extract siren / critical hazard flag (supports 'siren_triggered', 'siren', or tilt threshold)
+    siren_val = raw.get("siren_triggered") if raw.get("siren_triggered") is not None else raw.get("siren")
+    if siren_val is None:
+        siren_val = (tilt_val is not None and tilt_val >= 4.0)
+    siren_triggered = bool(siren_val)
 
     canonical: Dict[str, Any] = {
         "node_id": str(node_id),
@@ -161,8 +184,8 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
             "displacement": False,
             "crack": False,
         },
-        "anomaly_score": float(raw.get("anomaly_score", 0.05 if (tilt_val or 0.0) < 4.0 else 0.95)),
-        "siren_triggered": bool(raw.get("siren_triggered", False)),
+        "anomaly_score": anomaly_score,
+        "siren_triggered": siren_triggered,
         "node_health": {
             "battery_percent": battery_pct,
             "rssi_dbm": rssi_dbm,
