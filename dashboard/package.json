@@ -1,1 +1,29 @@
-{  "name": "subsense-platform",  "version": "1.0.0",  "private": true,  "description": "SubSense Smart Mine Subsidence Monitoring Platform - Layer 6 Application Layer",  "workspaces": [    "packages/*",    "services/*",    "apps/*"  ],  "scripts": {    "build": "npm run build --workspaces",    "test": "npm run test --workspace=services/bff-gateway",    "dev:bff": "npm run dev --workspace=services/bff-gateway",    "dev:web": "npm run dev --workspace=apps/web-dashboard",    "dev": "npm run dev:bff",    "host": "npm run dev:web"  },  "keywords": [    "subsense",    "mine-subsidence",    "iot",    "geotechnical",    "safety-critical"  ],  "author": "SubSense Engineering Team",  "license": "UNLICENSED"}
+{
+  "name": "subsense-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SubSense Smart Mine Subsidence Monitoring Platform - Layer 6 Application Layer",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev --workspace=apps/web-dashboard",
+    "dev:bff": "npm run dev --workspace=services/bff-gateway",
+    "build": "npm run build --workspaces",
+    "preview": "npm run preview --workspace=apps/web-dashboard",
+    "test": "npm run test --workspace=services/bff-gateway",
+    "host": "npm run dev:web"
+  },
+  "keywords": [
+    "subsense",
+    "mine-subsidence",
+    "iot",
+    "geotechnical",
+    "safety-critical"
+  ],
+  "author": "SubSense Engineering Team",
+  "license": "UNLICENSED"
+}
