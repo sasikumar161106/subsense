@@ -17,7 +17,8 @@
 #include "subsense_power_mgmt.h"
 #include "subsense_gateway_model.h"
 #include "subsense_node_model.h"
-#include "subsense_wifi_mesh.h"
+#include "subsense_lora_mesh.h"
+#include "subsense_lora_sx126x.h"
 #include "subsense_display.h"
 
 // Set to 1 if this board is GATEWAY (receives mesh packets), 0 if NODE (sends telemetry)
@@ -28,12 +29,12 @@
 // Change this if your board uses a different pin (e.g., GPIO 13 or external buzzer pin).
 #define PIN_SIREN_LED   2
 
-// Gateway mesh packet reception handler
-static void on_mesh_data_received(const char* json_payload, size_t len, const uint8_t sender_mac[6]) {
-    Serial.printf("\n[MESH RX] From %02X:%02X:%02X:%02X:%02X:%02X (%u bytes):\n%s\n\n",
+// Gateway LoRa packet reception handler
+static void on_lora_data_received(const char* json_payload, size_t len, const uint8_t sender_mac[6], int16_t rssi_dbm, uint8_t hop_count) {
+    Serial.printf("\n[LORA RX] From %02X:%02X:%02X:%02X:%02X:%02X (%u bytes) | RSSI: %d dBm | Hops: %u:\n%s\n\n",
            sender_mac[0], sender_mac[1], sender_mac[2],
            sender_mac[3], sender_mac[4], sender_mac[5],
-           (unsigned)len, json_payload);
+           (unsigned)len, (int)rssi_dbm, (unsigned)hop_count, json_payload);
 }
 
 // Static system components
@@ -100,18 +101,18 @@ void setup_subsense() {
     g_pwr_config.battery_capacity_mah = 2600.0f;
     subsense_power_init(&g_pwr_config);
 
-    // 7. Initialize WiFi Mesh (ESP-NOW) transport
+    // 7. Initialize LoRa SX126x Mesh (865 MHz) transport
 #if SUBSENSE_IS_GATEWAY
-    subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_GATEWAY, on_mesh_data_received);
-    Serial.println("  [WiFi Mesh] Initialized in GATEWAY mode (listening for node packets).");
+    subsense_lora_mesh_init(SUBSENSE_MESH_ROLE_GATEWAY, on_lora_data_received);
+    Serial.println("  [LoRa Mesh] Initialized in GATEWAY mode (listening on 865 MHz).");
 #else
-    subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
-    Serial.println("  [WiFi Mesh] Initialized in NODE mode (broadcasting packets).");
+    subsense_lora_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
+    Serial.println("  [LoRa Mesh] Initialized in NODE mode (broadcasting on 865 MHz).");
 
     // 8. Initialize OLED Display (EXCLUSIVE TO SENSOR NODE)
     bool disp_ok = subsense_display_init(21, 22, 0x3C);
     if (disp_ok) {
-        subsense_display_boot_screen("ESP32-NODE-01", "v2.4.0");
+        subsense_display_boot_screen("ESP32-NODE-01", "v2.5.0-lora");
     }
 #endif
 }
@@ -327,10 +328,10 @@ void test_full_pipeline() {
     Serial.println("  5. Emitted Cloud-Conformant JSON Risk Event Payload:");
     Serial.println(g_json_buf);
 
-    // 6. Transmit over WiFi Mesh (ESP-NOW)
-    if (subsense_wifi_mesh_is_ready()) {
-        subsense_wifi_mesh_send(g_json_buf, (size_t)json_len);
-        Serial.println("  --> [MESH] Event broadcast via WiFi Mesh (ESP-NOW).");
+    // 6. Transmit over LoRa Mesh (865 MHz)
+    if (subsense_lora_mesh_is_ready()) {
+        subsense_lora_mesh_send(g_json_buf, (size_t)json_len);
+        Serial.println("  --> [LORA MESH] Event broadcast via LoRa SX126x @ 865 MHz.");
     }
 
     // 7. Actuate physical hardware
@@ -409,12 +410,12 @@ void run_live_simulation() {
             ev.siren_triggered = true;
         }
 
-        // Broadcast over WiFi Mesh on warning or critical alert
+        // Broadcast over LoRa Mesh on warning or critical alert
         if (ev.siren_triggered || strcmp(ev.threshold_breached, "none") != 0) {
             int json_len = subsense_serialize_event_json(&ev, g_json_buf, sizeof(g_json_buf));
-            if (subsense_wifi_mesh_is_ready()) {
-                subsense_wifi_mesh_send(g_json_buf, (size_t)json_len);
-                Serial.println("  --> [MESH] Event transmitted over WiFi (ESP-NOW).");
+            if (subsense_lora_mesh_is_ready()) {
+                subsense_lora_mesh_send(g_json_buf, (size_t)json_len);
+                Serial.println("  --> [LORA MESH] Event transmitted over LoRa SX126x @ 865 MHz.");
             }
         }
 
@@ -580,8 +581,8 @@ void setup() {
 }
 
 void loop() {
-    // Keep WiFi Mesh housekeeper running (for gateway reassembly & timeout drops)
-    subsense_wifi_mesh_loop();
+    // Keep LoRa Mesh housekeeper running (for gateway reassembly & timeout drops)
+    subsense_lora_mesh_loop();
 
     if (Serial.available() > 0) {
         char cmd = Serial.read();

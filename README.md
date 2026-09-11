@@ -32,15 +32,15 @@ Underground coal mining extraction (bord-and-pillar, longwall caving) inevitably
 ```mermaid
 graph TD
     subgraph "Layer 1 & 2: Underground Hardware Mesh"
-        SN["Sensor Node (Board 1)<br/>ESP32 + MPU6050 + OLED<br/>Sampling @ 100Hz<br/>TinyML INT8 <5μs"]
-        RN["Relay Node (Board 2)<br/>ESP32 Standalone Repeater<br/>ESP-NOW Linear Forwarder"]
-        GW["Gateway Node (Board 3)<br/>ESP32 Mesh Receiver<br/>UART Serial Output"]
-        SN -->|ESP-NOW Hop 0| RN
-        RN -->|ESP-NOW Hop 1| GW
+        SN["Sensor Node (Board 1)<br/>ESP32 + MPU6050 + OLED<br/>LoRa SX126x @ 865MHz<br/>TinyML INT8 <5μs"]
+        RN["Relay Node (Board 2)<br/>ESP32 Standalone Repeater<br/>LoRa SX126x Linear Forwarder"]
+        GW["Gateway Node (Board 3)<br/>ESP32 LoRa Receiver<br/>UART Serial Output"]
+        SN -->|LoRa SX126x Hop 0| RN
+        RN -->|LoRa SX126x Hop 1| GW
     end
 
     subgraph "Layer 3: Surface Ingestion & Resilience"
-        GB["Gateway Bridge (Python)<br/>COM11 @ 115200 Baud<br/>Auto-reconnect & UTC Stamping"]
+        GB["Gateway Bridge (Python)<br/>COM5 @ 115200 Baud / Direct LoRa<br/>Auto-reconnect & UTC Stamping"]
         DB_QUEUE[("Offline SQLite Queue<br/>Store-and-Forward Buffer")]
         GW -->|USB Serial| GB
         GB <-->|Network Loss Fallback| DB_QUEUE
@@ -74,11 +74,11 @@ In mining safety, hallucinated or interpolated sensor values can lead to tragic 
 - Physical nodes measure pitch tilt and dynamic vibration.
 - Uninstalled borehole channels (such as multipoint extensometer displacement or crack width gauges) remain strictly `null` with explicit `false` availability flags.
 
-### 3. ESP-NOW Linear Multi-Hop Wireless Mesh
-2.4 GHz RF cannot penetrate through hundreds of meters of solid coal and sandstone. SubSense uses an ESP-NOW linear mesh protocol:
-- **Sensor Node**: Broadcasts telemetry with sequence counter and battery voltage.
+### 3. LoRa SX126x Linear Multi-Hop Wireless Mesh
+Sub-GHz 865 MHz RF (India ISM band) penetrates through hundreds of meters of solid coal and sandstone galleries far better than 2.4 GHz WiFi. SubSense uses a LoRa SX126x P2P mesh protocol (non-LoRaWAN, matching the proven `loramain` driver):
+- **Sensor Node**: Broadcasts fixed-mode LoRa telemetry at 865 MHz (22 dBm TX power, 2400 bps air speed) with sequence counter and battery voltage.
 - **Relay Nodes**: Positioned around gallery turns, forwarding packets with circular deduplication caches and hop counter increments.
-- **Gateway Node**: Demodulates packets and streams formatted JSON over USB UART to the surface bridge.
+- **Gateway Node**: Demodulates packets, extracts hardware RSSI (`-(256 - raw)` dBm), and streams formatted JSON over USB UART to the surface bridge.
 
 ### 4. Resilient Store-and-Forward Offline Queue
 If surface Ethernet or satellite links go down, the Python Gateway Bridge buffers incoming packets into an ACID SQLite database (`gateway-bridge/offline_queue.db`). A dedicated background worker continuously monitors network health and replays the queued backlog chronologically as soon as connectivity resumes—guaranteeing **zero packet loss**.

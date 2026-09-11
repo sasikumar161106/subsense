@@ -20,7 +20,8 @@
 #include "subsense_node_model.h"
 #include "subsense_fallback.h"
 #include "subsense_power_mgmt.h"
-#include "subsense_wifi_mesh.h"
+#include "subsense_lora_mesh.h"
+#include "subsense_lora_sx126x.h"
 #include "subsense_display.h"
 
 // ==============================================================================
@@ -37,7 +38,7 @@
 #define NODE_ID             "SS-PANEL7-N042"
 #define SITE_ID             "PANEL7-JHARIA"
 #define TENANT_ID           "tenant-jharia-01"
-#define FIRMWARE_VER        "v2.4.0-oled"
+#define FIRMWARE_VER        "v2.5.0-lora"
 
 // ==============================================================================
 // Global System State & Buffers
@@ -202,7 +203,7 @@ void setup() {
     Serial.println();
     Serial.println("================================================================================");
     Serial.println(" SubSense Smart Sensor Node (Board 1) -- Sensing, TinyML & OLED Health Console");
-    Serial.println(" Hardware: ESP32 @ 240MHz | Transmit: WiFi Mesh (ESP-NOW Hop 0)");
+    Serial.println(" Hardware: ESP32 @ 240MHz | Transmit: LoRa SX126x (865 MHz P2P Mesh Hop 0)");
     Serial.println("================================================================================");
 
     // 1. Configure Hardware Siren & Status Pins
@@ -254,13 +255,14 @@ void setup() {
 
     subsense_inference_init(&g_node_config, &g_health);
 
-    // 5. Initialize WiFi Mesh in NODE role
-    bool mesh_ok = subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
+    // 5. Initialize LoRa SX126x Mesh in NODE role (865 MHz, 22 dBm)
+    bool mesh_ok = subsense_lora_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
     if (mesh_ok) {
-        Serial.print("[MESH] Node initialized. My MAC: ");
-        Serial.println(WiFi.macAddress());
+        const uint8_t* mac = subsense_lora_mesh_get_mac();
+        Serial.printf("[LORA MESH] Node initialized @ 865 MHz. Radio MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                      mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     } else {
-        Serial.println("[MESH] ERROR: WiFi mesh init failed.");
+        Serial.println("[LORA MESH] ERROR: LoRa SX126x init failed. Check wiring (RX=16, TX=17, M0=25, M1=26).");
     }
 
     Serial.println("[SYSTEM] Setup completed. Entering sensing, TinyML & health display loop.");
@@ -270,8 +272,8 @@ void setup() {
 // Arduino loop()
 // ==============================================================================
 void loop() {
-    // 1. Maintain WiFi mesh housekeeping
-    subsense_wifi_mesh_loop();
+    // 1. Maintain LoRa mesh housekeeping
+    subsense_lora_mesh_loop();
 
     // 2. Sample physical MPU6050
     float tilt = 0.0f;
@@ -351,12 +353,15 @@ void loop() {
         reported_anomaly, g_siren_active ? "true" : "false", ts_str
     );
 
-    bool tx_ok = subsense_wifi_mesh_send(tx_payload, strlen(tx_payload));
+    bool tx_ok = subsense_lora_mesh_send(tx_payload, strlen(tx_payload));
     if (tx_ok) {
         g_packet_counter++;
     }
 
-    Serial.printf("[SENSOR NODE] Tilt: %5.2f deg | Vib: %4.2f mm/s | ML Score: %4.2f | Health: %s | Tx: %s\n",
+    // Emit clean JSON line over USB UART for connected Raspberry Pi LoRa gateway
+    Serial.println(tx_payload);
+
+    Serial.printf("[SENSOR NODE] Tilt: %5.2f deg | Vib: %4.2f mm/s | ML Score: %4.2f | Health: %s | LoRa Tx: %s\n",
                   tilt, vib, event.anomaly_score, disp_data.status_text, tx_ok ? "OK" : "FAIL");
 
     // Sampling cadence: 1000 ms (1 Hz)

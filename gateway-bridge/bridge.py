@@ -48,18 +48,15 @@ DEFAULT_RETRY_INTERVAL_SEC = 5.0
 # ==============================================================================
 
 def format_timestamp(raw_ts: Any) -> str:
-    """Ensure timestamp is valid current ISO 8601 UTC string within ingestion window."""
-    now_dt = datetime.now(timezone.utc)
+    """Ensure timestamp is valid ISO 8601 UTC string."""
     if isinstance(raw_ts, str) and len(raw_ts) >= 19 and ("T" in raw_ts or "-" in raw_ts):
         try:
             clean_ts = raw_ts.replace("Z", "+00:00")
             parsed = datetime.fromisoformat(clean_ts)
-            # If timestamp is within 60s of current time, keep it; otherwise stamp gateway arrival time
-            if abs((now_dt - parsed).total_seconds()) < 60:
-                return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
+            return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
         except Exception:
             pass
-    return now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -73,7 +70,7 @@ def to_canonical(raw: Dict[str, Any]) -> Dict[str, Any]:
     # Extract node and tenant/site identifiers
     node_id = raw.get("node_id") or raw.get("node") or "SS-PANEL7-N042"
     site_id = raw.get("site_id") or "PANEL7-JHARIA"
-    tenant_id = raw.get("tenant_id") or "OPCO-ECL-01"
+    tenant_id = raw.get("tenant_id") or "tenant-jharia-01"
     zone_id = raw.get("zone_id") or "PANEL-1-ZONE-01"
 
     # Extract timestamp from various possible firmware keys
@@ -498,6 +495,53 @@ class GatewayBridge:
                 logger.error(f"Unexpected error: {e}. Retrying in 2s...")
                 time.sleep(2.0)
 
+    def run_direct_lora_loop(self, freq: int = 865) -> None:
+        """
+        Directly receive LoRa packets via SX126x module attached to host UART / USB.
+        Uses the sx126x driver ported from loramain.
+        """
+        try:
+            from drivers.sx126x import sx126x
+        except ImportError:
+            import importlib
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "drivers"))
+            sx126x = importlib.import_module("sx126x").sx126x
+
+        self.start_worker()
+        logger.info(f"Starting Direct LoRa SX126x ingestion on {self.port} @ {freq} MHz...")
+
+        while self._running:
+            try:
+                lora = sx126x(serial_num=self.port, freq=freq, addr=0, power=22, rssi=True)
+                logger.info(f"[LORA] SX126x hardware initialized on {self.port} ({freq} MHz). Listening for packets...")
+
+                while self._running:
+                    msg, rssi = lora.receive()
+                    if msg:
+                        logger.info(f"[LORA RX] RSSI: {rssi} dBm | Raw: {msg[:120]}")
+                        # If msg is JSON or contains JSON
+                        try:
+                            data = json.loads(msg)
+                            if isinstance(data, dict):
+                                if "rssi_dbm" not in data and rssi is not None:
+                                    data["rssi_dbm"] = rssi
+                                self.process_raw_dict(data)
+                                continue
+                        except Exception:
+                            pass
+
+                        # If multi-line or decorated banner string
+                        for line in msg.splitlines():
+                            self.process_serial_line(line)
+
+                    time.sleep(0.05)
+
+                lora.close()
+
+            except Exception as e:
+                logger.warning(f"[LORA ERROR] {e}. Retrying connection in 2s...")
+                time.sleep(2.0)
+
 
 # ==============================================================================
 # 5. CLI & Entry Point
@@ -505,16 +549,23 @@ class GatewayBridge:
 
 def main():
     parser = argparse.ArgumentParser(description="SubSense Gateway Serial-to-Cloud Bridge")
+    parser.add_argument("--mode", choices=["serial", "direct-lora"], default=os.getenv("BRIDGE_MODE", "serial"),
+                        help="Ingestion mode: 'serial' (via ESP32 Gateway) or 'direct-lora' (via host SX126x module)")
     parser.add_argument("--port", default=os.getenv("SER_PORT", DEFAULT_PORT), help="Serial port (e.g. COM5, /dev/ttyUSB0)")
-    parser.add_argument("--baud", type=int, default=int(os.getenv("SER_BAUD", str(DEFAULT_BAUD))), help="Serial baud rate (default: 115200)")
+    parser.add_argument("--baud", type=int, default=int(os.getenv("SER_BAUD", str(DEFAULT_BAUD))), help="Serial baud rate (default: 115200 for ESP32 gateway, 9600 for direct LoRa)")
+    parser.add_argument("--lora-freq", type=int, default=int(os.getenv("LORA_FREQ", "865")), help="LoRa frequency in MHz (default: 865)")
     parser.add_argument("--ingest-url", default=os.getenv("INGEST_URL", DEFAULT_INGEST_URL), help="AI/ML Ingestion URL")
     parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="Path to offline SQLite database")
     parser.add_argument("--mock", action="store_true", help="Run in mock mode generating sample Gateway packets")
     args = parser.parse_args()
 
+    baud_rate = args.baud
+    if args.mode == "direct-lora" and args.baud == DEFAULT_BAUD:
+        baud_rate = 9600  # Default E22 UART communication rate
+
     bridge = GatewayBridge(
         port=args.port,
-        baud=args.baud,
+        baud=baud_rate,
         ingest_url=args.ingest_url,
         db_path=args.db_path,
     )
@@ -533,7 +584,7 @@ def main():
                 # Format exactly as gateway serial output with banner
                 mock_stream = (
                     "\n================================================================================\n"
-                    f"[GATEWAY MESH RX] Received from Origin Node 24:6F:28:1A:BC:01 (142 bytes):\n"
+                    f"[GATEWAY LORA RX] Received from Origin Node 24:6F:28:1A:BC:01 (142 bytes) | RSSI: -65 dBm:\n"
                     "--------------------------------------------------------------------------------\n"
                     + json.dumps(scenario, indent=2) + "\n"
                     "================================================================================\n"
@@ -542,6 +593,13 @@ def main():
                     bridge.process_serial_line(line)
                 time.sleep(1.0)
             logger.info("Mock demonstration complete.")
+        finally:
+            bridge.stop()
+    elif args.mode == "direct-lora":
+        try:
+            bridge.run_direct_lora_loop(freq=args.lora_freq)
+        except KeyboardInterrupt:
+            logger.info("Interrupted by user.")
         finally:
             bridge.stop()
     else:
@@ -555,3 +613,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -12,7 +12,7 @@
 #include "subsense_fallback.h"
 #include "subsense_ota_manager.h"
 #include "subsense_power_mgmt.h"
-#include "subsense_wifi_mesh.h"  
+#include "subsense_lora_mesh.h"  
 // Statically allocated system components
 static SubSenseWindowBuffer     s_window_buf;
 static SubSenseHealthTelemetry  s_health;
@@ -63,8 +63,8 @@ void subsense_system_init(void) {
     s_pwr_config.battery_capacity_mah = 2600.0f;
     subsense_power_init(&s_pwr_config);
 
-    // 7. Initialize WiFi mesh transport (Board 1 - Sensor Node role)
-    subsense_wifi_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
+    // 7. Initialize LoRa SX126x mesh transport (Board 1 - Sensor Node role)
+    subsense_lora_mesh_init(SUBSENSE_MESH_ROLE_NODE, NULL);
 }
 
 /**
@@ -123,19 +123,19 @@ void subsense_step(
         s_health.fallback_activations++;
     }
 
-    // 6. If threshold breached or raw hazard detected, emit event over WiFi Mesh
+    // 6. If threshold breached or raw hazard detected, emit event over LoRa Mesh
     if (breached || raw_hazard) {
         int json_len = subsense_serialize_event_json(&event, s_json_event_buffer, sizeof(s_json_event_buffer));
-        if (subsense_wifi_mesh_is_ready()) {
-            subsense_wifi_mesh_send(s_json_event_buffer, (size_t)json_len);
+        if (subsense_lora_mesh_is_ready()) {
+            subsense_lora_mesh_send(s_json_event_buffer, (size_t)json_len);
         }
     }
 
-    // 7. Periodic self-health reporting over WiFi Mesh
+    // 7. Periodic self-health reporting over LoRa Mesh
     if (s_health.total_inferences % 60 == 0) {
         int health_len = subsense_serialize_health_json(&s_health, s_json_health_buffer, sizeof(s_json_health_buffer));
-        if (subsense_wifi_mesh_is_ready()) {
-            subsense_wifi_mesh_send(s_json_health_buffer, (size_t)health_len);
+        if (subsense_lora_mesh_is_ready()) {
+            subsense_lora_mesh_send(s_json_health_buffer, (size_t)health_len);
         }
     }
 }
