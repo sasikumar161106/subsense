@@ -245,6 +245,12 @@ class LoRaGatewayNode:
 
 
 def run_gateway(port: Optional[str] = None):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] [GATEWAY-NODE] %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,
+    )
     gw = LoRaGatewayNode(port=port or SERIAL_PORT)
     gw.run()
 

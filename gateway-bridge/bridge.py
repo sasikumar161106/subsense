@@ -421,7 +421,13 @@ class GatewayBridge:
                 self.queue.enqueue(payload, err_msg)
                 return False
         except requests.RequestException as exc:
-            err_msg = f"Connection failed: {str(exc)}"
+            err_str = str(exc)
+            if "ConnectTimeoutError" in err_str or "timed out" in err_str:
+                err_msg = f"Timeout connecting to ingestion endpoint ({self.ingest_url})"
+            elif "ConnectionRefusedError" in err_str or "refused" in err_str:
+                err_msg = f"Connection refused at ingestion endpoint ({self.ingest_url})"
+            else:
+                err_msg = err_str[:120]
             logger.warning(f"[INGESTION OFFLINE] {err_msg} -> buffering to offline queue")
             self.queue.enqueue(payload, err_msg)
             return False

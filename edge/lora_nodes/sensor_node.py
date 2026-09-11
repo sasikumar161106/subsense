@@ -312,6 +312,12 @@ def run_sensor(
     anomaly: bool = False,
     esp32_port: Optional[str] = None,
 ):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] [SENSOR-NODE] %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,
+    )
     node = LoRaSensorNode(
         node_id=node_id or DEFAULT_NODE_ID,
         port=port or SERIAL_PORT,

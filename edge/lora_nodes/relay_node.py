@@ -180,6 +180,12 @@ class LoRaRelayNode:
 
 
 def run_relay(relay_id: Optional[str] = None, port: Optional[str] = None):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] [RELAY-NODE] %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,
+    )
     node = LoRaRelayNode(
         relay_id=relay_id or DEFAULT_RELAY_ID,
         port=port or SERIAL_PORT,

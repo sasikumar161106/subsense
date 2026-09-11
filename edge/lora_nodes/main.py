@@ -55,6 +55,15 @@ def main():
 
     args = parser.parse_args()
 
+    import logging
+    log_tag = f"[{args.mode.upper()}-NODE]"
+    logging.basicConfig(
+        level=logging.INFO,
+        format=f"%(asctime)s [%(levelname)s] {log_tag} %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,
+    )
+
     try:
         if args.mode == "sensor":
             run_sensor(
