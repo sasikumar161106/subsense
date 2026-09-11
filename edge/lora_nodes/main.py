@@ -43,6 +43,12 @@ def main():
         help="Serial port for SX126x module (e.g. COM5 or /dev/ttyUSB0)",
     )
     parser.add_argument(
+        "--freq",
+        type=int,
+        default=865,
+        help="LoRa RF frequency in MHz (default: 865 for India ISM band)",
+    )
+    parser.add_argument(
         "--anomaly",
         action="store_true",
         help="(Sensor mode only) Simulate strata tilt breach (>4.0 deg)",
@@ -51,6 +57,11 @@ def main():
         "--esp32-port",
         default=None,
         help="(Sensor mode only) Serial port of attached ESP32 (e.g. /dev/ttyUSB0 or COM3)",
+    )
+    parser.add_argument(
+        "--dashboard-url",
+        default=None,
+        help="(Gateway mode only) Base URL or broadcast URL of Dashboard (e.g. http://192.168.219.11:3001)",
     )
 
     args = parser.parse_args()
@@ -69,13 +80,17 @@ def main():
             run_sensor(
                 node_id=args.id,
                 port=args.port,
+                freq=args.freq,
                 anomaly=args.anomaly,
                 esp32_port=args.esp32_port,
             )
         elif args.mode == "relay":
-            run_relay(relay_id=args.id, port=args.port)
+            run_relay(relay_id=args.id, port=args.port, freq=args.freq)
         elif args.mode == "gateway":
-            run_gateway(port=args.port)
+            dash_url = args.dashboard_url
+            if dash_url and not dash_url.endswith("/telemetry/broadcast"):
+                dash_url = dash_url.rstrip("/") + "/api/v1/telemetry/broadcast"
+            run_gateway(port=args.port, freq=args.freq, bff_url=dash_url)
     except KeyboardInterrupt:
         print("\n[System] Shutting down...")
         sys.exit(0)
