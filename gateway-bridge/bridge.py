@@ -436,9 +436,12 @@ class GatewayBridge:
                             if resp.status_code in (200, 201, 202):
                                 self.queue.remove(item_id)
                                 logger.info(f"[OFFLINE REPLAY SUCCESS] Dispatched queued packet ID {item_id} (Node: {payload.get('node_id')})")
+                            elif resp.status_code == 400:
+                                self.queue.remove(item_id)
+                                logger.warning(f"[OFFLINE DROP] Dropped unrecoverable packet ID {item_id} (HTTP 400: {resp.text[:80]})")
                             else:
                                 self.queue.increment_retry(item_id, f"HTTP {resp.status_code}")
-                                break  # Stop batch on failure to maintain FIFO order
+                                break  # Stop batch on temporary failure to maintain FIFO order
                         except requests.RequestException as e:
                             self.queue.increment_retry(item_id, str(e))
                             break  # Backend still down; back off

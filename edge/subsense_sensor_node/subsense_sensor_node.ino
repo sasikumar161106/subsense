@@ -90,24 +90,27 @@ static void calibrate_mpu6050_tare(void) {
     float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
     int valid = 0;
 
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 35; i++) {
         Wire.beginTransmission(MPU6050_I2C_ADDR);
         Wire.write(0x3B);
         Wire.endTransmission(false);
         Wire.requestFrom((uint8_t)MPU6050_I2C_ADDR, (size_t)6, true);
 
         if (Wire.available() >= 6) {
-            int16_t ax = (Wire.read() << 8) | Wire.read();
-            int16_t ay = (Wire.read() << 8) | Wire.read();
-            int16_t az = (Wire.read() << 8) | Wire.read();
-            if (i >= 5) { // discard initial 5 settling samples
+            uint8_t hx = Wire.read(); uint8_t lx = Wire.read();
+            uint8_t hy = Wire.read(); uint8_t ly = Wire.read();
+            uint8_t hz = Wire.read(); uint8_t lz = Wire.read();
+            int16_t ax = (int16_t)((hx << 8) | lx);
+            int16_t ay = (int16_t)((hy << 8) | ly);
+            int16_t az = (int16_t)((hz << 8) | lz);
+            if (i >= 8) { // discard initial 8 settling samples
                 sum_x += (float)ax / 16384.0f;
                 sum_y += (float)ay / 16384.0f;
                 sum_z += (float)az / 16384.0f;
                 valid++;
             }
         }
-        delay(15);
+        delay(20);
     }
 
     if (valid > 0) {
@@ -122,7 +125,11 @@ static void calibrate_mpu6050_tare(void) {
             g_tared = true;
             Serial.printf("[TARE] Calibrated zero: base=(%.3f, %.3f, %.3f) | mag=%.3f\n",
                           g_base_gx, g_base_gy, g_base_gz, mag);
+        } else {
+            g_base_gx = 0.0f; g_base_gy = 0.0f; g_base_gz = 1.0f; g_tared = true;
         }
+    } else {
+        g_base_gx = 0.0f; g_base_gy = 0.0f; g_base_gz = 1.0f; g_tared = true;
     }
 }
 
@@ -139,9 +146,12 @@ static void read_mpu6050(float* out_tilt, float* out_vib) {
     Wire.requestFrom((uint8_t)MPU6050_I2C_ADDR, (size_t)6, true);
 
     if (Wire.available() >= 6) {
-        int16_t ax = (Wire.read() << 8) | Wire.read();
-        int16_t ay = (Wire.read() << 8) | Wire.read();
-        int16_t az = (Wire.read() << 8) | Wire.read();
+        uint8_t hx = Wire.read(); uint8_t lx = Wire.read();
+        uint8_t hy = Wire.read(); uint8_t ly = Wire.read();
+        uint8_t hz = Wire.read(); uint8_t lz = Wire.read();
+        int16_t ax = (int16_t)((hx << 8) | lx);
+        int16_t ay = (int16_t)((hy << 8) | ly);
+        int16_t az = (int16_t)((hz << 8) | lz);
 
         // Convert raw LSB to Gs (+/- 2g range -> 16384 LSB/g)
         float g_x = (float)ax / 16384.0f;

@@ -55,7 +55,7 @@ class PayloadValidator:
     def _load_bounds(self, config_path: Optional[str]) -> Dict[str, Any]:
         default_bounds = {
             "sensors": {
-                "tilt_deg": {"min": -45.0, "max": 45.0, "max_rate_deg_per_sec": 5.0},
+                "tilt_deg": {"min": -90.0, "max": 90.0, "max_rate_deg_per_sec": 90.0},
                 "vibration_rms_mm_s": {"min": 0.0, "max": 200.0, "max_rate_mm_s_per_sec": 150.0},
                 "displacement_mm": {"min": 0.0, "max": 1000.0, "max_rate_mm_per_sec": 50.0},
                 "crack_index": {"min": 0.0, "max": 1.0, "max_rate_per_sec": 0.5},

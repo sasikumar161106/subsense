@@ -303,6 +303,9 @@ bool subsense_wifi_mesh_send(const char* json_payload, size_t len) {
         if (result != ESP_OK) {
             return false; // caller can retry the whole send; keeps logic simple
         }
+        if (i + 1 < total_chunks) {
+            delay(12); // Pacing delay so ESP-NOW radio TX FIFO is not overrun by back-to-back fragments
+        }
     }
 
     return true;
